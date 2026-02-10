@@ -110,16 +110,46 @@ custom_names = {
 }
 
 color_palette = {
-    1: (255, 0, 0), # Class 1, red
-    2: (0, 0, 255), # Class 2, blue
-    3: (0, 255, 0), # Class 2, green
+    1: (255, 255, 255),  # Surgical Instruments - White
+    2: (0, 0, 255),      # Vein (major) - Blue
+    3: (255, 0, 0),      # Artery (major) - Red
+    4: (255, 255, 0),    # Right Superior (Upper) Lobe - Yellow 
+    5: (0, 255, 0),      # Right Middle Lobe - Green
+    6: (0, 200, 100),    # Right Inferior (Lower) Lobe - Dark Green
+    7: (200, 150, 100),  # Left Superior (Upper) Lobe - Beige
+    8: (250, 150, 100),  # Left Inferior (Lower) Lobe - light Beige
+    9: (255, 200, 100),  # Bronchus - Light Orange
+    10: (180, 0, 0),     # Right Horizontal Fissure - Dark Red
+    11: (0, 0, 180),     # Right Oblique Fissure - Dark Blue
+    12: (150, 100, 50),  # Left Oblique Fissure - Brown
+    13: (0, 255, 255),   # Phrenic Nerve - Cyan
+    14: (0, 200, 255),   # Aorta - Teal
+    15: (0, 100, 255),   # Esophagus - Light Blue
+    16: (255, 150, 50),  # Lymph Nodes - Orange
+    17: (200, 100, 200), # Stomach - Light Purple
+    18: (255, 220, 200), # Cystic plate - Light Pink
 }
 
 custom_names = {
-    1: "Class 1",
-    2: "Class 2",
-    3: "Class 3",
+    1: "Surgical Instruments",
+    2: "Vein (major)",
+    3: "Artery (major)",
+    4: "Right Superior (Upper) Lobe",
+    5: "Right Middle Lobe",
+    6: "Right Inferior (Lower) Lobe",
+    7: "Left Superior (Upper) Lobe",
+    8: "Left Inferior (Lower) Lobe",
+    9: "Bronchus",
+    10: "Right Horizontal Fissure",
+    11: "Right Oblique Fissure",
+    12: "Left Oblique Fissure",
+    13: "Phrenic Nerve",
+    14: "Aorta",
+    15: "Esophagus",
+    16: "Lymph Nodes",
+    17: "Cotton Swab",
 }
+
 
 custom_palette_np = np.array([color_palette.get(i, (0, 0, 0)) for i in range(len(custom_names)+1)])
 custom_palette = custom_palette_np.astype(np.uint8).tobytes()
