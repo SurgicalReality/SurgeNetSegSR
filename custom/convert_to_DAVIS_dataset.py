@@ -28,6 +28,7 @@ Usage:
 import os
 import re
 import shutil
+from datetime import datetime
 
 
 def main(args):
@@ -35,12 +36,20 @@ def main(args):
     video_names = args.video_names.split(",")
     out_path = args.out_path
     count = 0
+    
+    # For logging
+    video_frame_counts = {}
+    total_frames = 0
+    start_time = datetime.now()
 
     for video_name in video_names:
         video_folder = os.path.join(workspace_path, video_name)
         if not os.path.exists(video_folder):
             print(f"Folder for video '{video_name}' not found in workspace. Skipping.")
             continue
+        
+        # Track frames for this video
+        video_frames = 0
         
         # images folder -> JPEGImages/video_name
         image_folder = os.path.join(video_folder, "images")
@@ -62,6 +71,11 @@ def main(args):
                 # save copy to output folder
                 shutil.copy(file_path, os.path.join(images_out_folder, new_filename))
                 count += 1
+                video_frames += 1
+        
+        # Store frame count for this video
+        video_frame_counts[video_name.replace(".", "_")] = video_frames
+        total_frames += video_frames
         
         # masks folder -> Annotations/video_name
         mask_folder = os.path.join(video_folder, "masks")
@@ -96,6 +110,36 @@ def main(args):
         print(f"Created training list at '{train_txt_path}' with {len(video_names)} videos.")
 
     print(f"Total files processed: {count}")
+    
+    # Write log file
+    log_path = os.path.join(out_path, "conversion_log.txt")
+    with open(log_path, "w") as log_file:
+        log_file.write("=" * 70 + "\n")
+        log_file.write("DAVIS DATASET CONVERSION LOG\n")
+        log_file.write("=" * 70 + "\n\n")
+        
+        log_file.write(f"Conversion Date: {start_time.strftime('%Y-%m-%d %H:%M:%S')}\n")
+        log_file.write(f"Workspace Path: {workspace_path}\n")
+        log_file.write(f"Output Path: {out_path}\n\n")
+        
+        log_file.write("-" * 70 + "\n")
+        log_file.write("VIDEO CLIPS PROCESSED:\n")
+        log_file.write("-" * 70 + "\n\n")
+        
+        for video_name, frame_count in video_frame_counts.items():
+            log_file.write(f"  {video_name:<50} {frame_count:>6} frames\n")
+        
+        log_file.write("\n" + "-" * 70 + "\n")
+        log_file.write("SUMMARY:\n")
+        log_file.write("-" * 70 + "\n\n")
+        log_file.write(f"  Total Video Clips: {len(video_frame_counts)}\n")
+        log_file.write(f"  Total Frames: {total_frames}\n")
+        log_file.write(f"  Total Files Processed: {count}\n")
+        log_file.write(f"\n  Training List: {train_txt_path}\n")
+        
+        log_file.write("\n" + "=" * 70 + "\n")
+    
+    print(f"\n✓ Conversion log saved to: {log_path}")
 
 if __name__ == "__main__":
     import argparse

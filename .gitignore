@@ -149,3 +149,5 @@ dmypy.json
 # Models
 .pt
 .pth
+
+custom/data/*
