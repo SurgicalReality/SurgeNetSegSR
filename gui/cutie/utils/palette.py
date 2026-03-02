@@ -115,10 +115,10 @@ color_palette = {
     3: (255, 0, 0),      # Artery (major) - Red
     4: (255, 255, 0),    # Right Superior (Upper) Lobe - Yellow 
     5: (0, 255, 0),      # Right Middle Lobe - Green
-    6: (0, 200, 100),    # Right Inferior (Lower) Lobe - Dark Green
+    6: (150, 0, 100),    # Right Inferior (Lower) Lobe - Dark Purlple
     7: (200, 150, 100),  # Left Superior (Upper) Lobe - Beige
     8: (250, 150, 100),  # Left Inferior (Lower) Lobe - light Beige
-    9: (255, 200, 100),  # Bronchus - Light Orange
+    9: (0, 200, 100),  # Bronchus - Dark Green
     10: (180, 0, 0),     # Right Horizontal Fissure - Dark Red
     11: (0, 0, 180),     # Right Oblique Fissure - Dark Blue
     12: (150, 100, 50),  # Left Oblique Fissure - Brown
