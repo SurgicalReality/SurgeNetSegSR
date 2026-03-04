@@ -104,6 +104,7 @@ class GUI(QWidget):
 
         # combobox
         self.combo = QComboBox(self)
+        self.combo.addItem("image")
         self.combo.addItem("mask")
         self.combo.addItem("davis")
         self.combo.addItem("fade")
