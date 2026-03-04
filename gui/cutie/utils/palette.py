@@ -109,6 +109,8 @@ custom_names = {
     46: "Duodenum",
 }
 
+# They need to have all indicies up to num_objects
+
 color_palette = {
     1: (255, 255, 255),  # Surgical Instruments - White
     2: (0, 0, 255),      # Vein (major) - Blue
@@ -117,7 +119,7 @@ color_palette = {
     5: (0, 255, 0),      # Right Middle Lobe - Green
     6: (150, 0, 100),    # Right Inferior (Lower) Lobe - Dark Purlple
     7: (200, 150, 100),  # Left Superior (Upper) Lobe - Beige
-    8: (250, 150, 100),  # Left Inferior (Lower) Lobe - light Beige
+    8: (200, 100, 255),  # Left Inferior (Lower) Lobe - levender
     9: (0, 200, 100),  # Bronchus - Dark Green
     10: (180, 0, 0),     # Right Horizontal Fissure - Dark Red
     11: (0, 0, 180),     # Right Oblique Fissure - Dark Blue
@@ -126,7 +128,7 @@ color_palette = {
     14: (0, 200, 255),   # Aorta - Teal
     15: (0, 100, 255),   # Esophagus - Light Blue
     16: (255, 150, 50),  # Lymph Nodes - Orange
-    17: (200, 100, 200), # Stomach - Light Purple
+    17: (200, 100, 200), # Cotton swab - Light Purple
     18: (255, 220, 200), # Cystic plate - Light Pink
 }
 

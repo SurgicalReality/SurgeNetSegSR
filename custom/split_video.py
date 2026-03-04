@@ -21,6 +21,7 @@ except ImportError:
     print("Problem with import.")
     print("Please install it using: pip install moviepy")
     exit(1)
+import json
 
 
 def split_video_into_clips(video_path, clip_duration_seconds, output_dir=None, out_frame_rate=None):
@@ -111,6 +112,31 @@ def split_video_into_clips(video_path, clip_duration_seconds, output_dir=None, o
     return created_files
 
 
+def prime_crop_config(video_path, config_path="custom/crop_config.json"):
+    """Prime crop_config.json with a blank entry for the video prefix."""
+    from pathlib import Path
+    video_prefix = Path(video_path).stem  # Use full filename without extension as prefix
+    try:
+        with open(config_path, 'r') as f:
+            all_configs = json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        all_configs = {}
+    if 'videos' not in all_configs:
+        all_configs['videos'] = {}
+    if video_prefix not in all_configs['videos']:
+        all_configs['videos'][video_prefix] = {
+            "crop_params": {"left": 0, "right": 0, "top": 0, "bottom": 0},
+            "original_resolution": None,
+            "new_resolution": None,
+            "video_prefix": video_prefix
+        }
+        with open(config_path, 'w') as f:
+            json.dump(all_configs, f, indent=4)
+        print(f"Primed crop_config.json for video prefix: {video_prefix}")
+    else:
+        print(f"Entry for video prefix {video_prefix} already exists in crop_config.json")
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='Split a video into multiple clips of specified duration.',
@@ -150,6 +176,9 @@ def main():
     if args.clip_duration <= 0:
         print("Error: Clip duration must be positive")
         return 1
+    
+    # Prime crop config for this video
+    prime_crop_config(args.video_path)
     
     try:
         split_video_into_clips(

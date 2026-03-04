@@ -102,14 +102,19 @@ def load_crop_config(config_path):
     """Load crop parameters from JSON config file."""
     with open(config_path, 'r') as f:
         config = json.load(f)
-    
-    crop_params = config.get('crop_params', {})
-    return {
-        'left': crop_params.get('left', 0),
-        'right': crop_params.get('right', 0),
-        'top': crop_params.get('top', 0),
-        'bottom': crop_params.get('bottom', 0)
-    }
+    video_name = Path(load_crop_config.video_path).stem
+    videos = config.get('videos', {})
+    for key in videos:
+        if key in video_name:
+            video_prefix = key
+            crop_params = videos[key].get('crop_params', {})
+            return {
+                'left': crop_params.get('left', 0),
+                'right': crop_params.get('right', 0),
+                'top': crop_params.get('top', 0),
+                'bottom': crop_params.get('bottom', 0)
+            }
+    raise ValueError(f"No crop config found for video prefix '{video_prefix}' in {config_path}")
 
 
 def main():
@@ -171,7 +176,13 @@ def main():
     # Load crop parameters
     if args.config:
         print(f"Loading crop parameters from: {args.config}")
-        crop_params = load_crop_config(args.config)
+        load_crop_config.video_path = args.video_path
+        try:
+            crop_params = load_crop_config(args.config)
+        except Exception as e:
+            print(f"\nError: {e}")
+            print("Aborting: No valid crop config found for this video.")
+            return 1
     else:
         crop_params = {
             'left': args.left,
@@ -179,11 +190,11 @@ def main():
             'top': args.top,
             'bottom': args.bottom
         }
-    
+
     # Validate parameters
     if all(v == 0 for v in crop_params.values()):
         print("Warning: All crop parameters are 0. No cropping will be performed.")
-    
+
     try:
         crop_video(
             args.video_path,
