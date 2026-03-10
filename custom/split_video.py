@@ -81,19 +81,19 @@ def split_video_into_clips(video_path, clip_duration_seconds, output_dir=None, o
     for i in range(num_clips):
         start_time = i * clip_duration_seconds
         end_time = min((i + 1) * clip_duration_seconds, total_duration)
-        
-        # Calculate frame numbers
-        start_frame = int(start_time * fps)
-        end_frame = int(end_time * fps)
-        
-        # Create clip filename
-        clip_filename = f"{base_name}_{start_frame:06d}_{end_frame:06d}.mp4"
+
+        # Use second counts for naming
+        start_sec = int(round(start_time))
+        end_sec = int(round(end_time))
+
+        # Create clip filename with seconds
+        clip_filename = f"{base_name}_{start_sec:04d}_{end_sec:04d}_sec.mp4"
         clip_path = output_dir / clip_filename
-        
+
         print(f"  Clip {i+1}/{num_clips}: {clip_filename} ({start_time:.2f}s - {end_time:.2f}s)")
-        
+
         # Extract and save clip
-        clip = video.subclipped(start_time, end_time)
+        clip = video.subclip(start_time, end_time)
         clip.write_videofile(
             str(clip_path),
             codec='libx264',
@@ -102,7 +102,7 @@ def split_video_into_clips(video_path, clip_duration_seconds, output_dir=None, o
             logger=None  # Suppress moviepy progress bars for cleaner output
         )
         clip.close()
-        
+
         created_files.append(str(clip_path))
     
     # Close the original video
