@@ -1,0 +1,117 @@
+{
+    "videos": {
+        "RLL_S9": {
+            "phases": {
+                "phase_1": {
+                    "view": "other",
+                    "start_time": "00:00:00",
+                    "end_time": "00:00:50"
+                },
+                "phase_2": {
+                    "view": "anterior",
+                    "start_time": "00:00:50",
+                    "end_time": "00:00:59"
+                },
+                "phase_3": {
+                    "view": "inferior",
+                    "start_time": "00:00:59",
+                    "end_time": "00:02:31"
+                },
+                "phase_4": {
+                    "view": "normal",
+                    "start_time": "00:02:31",
+                    "end_time": "00:02:40"
+                },
+                "phase_5": {
+                    "view": "posterior",
+                    "start_time": "00:02:40",
+                    "end_time": "00:05:39"
+                },
+                "phase_6": {
+                    "view": "other",
+                    "start_time": "00:05:39",
+                    "end_time": "00:05:43"
+                },
+                "phase_7": {
+                    "view": "inferior",
+                    "start_time": "00:05:43",
+                    "end_time": "00:06:08"
+                },
+                "phase_8": {
+                    "view": "fissure",
+                    "start_time": "00:06:08",
+                    "end_time": "00:10:19"
+                },
+                "phase_9": {
+                    "view": "normal",
+                    "start_time": "00:10:19",
+                    "end_time": "00:11:20"
+                },
+                "phase_10": {
+                    "view": "normal",
+                    "start_time": "00:11:20",
+                    "end_time": "00:11:35"
+                },
+                "phase_11": {
+                    "view": "inferior",
+                    "start_time": "00:11:35",
+                    "end_time": "00:14:30"
+                }
+            }
+        },
+        "s8-s10_LLL": {
+            "phases": {
+                "phase_1": {
+                    "view": "other",
+                    "start_time": "00:00:00",
+                    "end_time": "00:00:37"
+                },
+                "phase_2": {
+                    "view": "inferior",
+                    "start_time": "00:00:37",
+                    "end_time": "00:01:39"
+                },
+                "phase_3": {
+                    "view": "posterior",
+                    "start_time": "00:01:39",
+                    "end_time": "00:03:40"
+                },
+                "phase_4": {
+                    "view": "normal",
+                    "start_time": "00:03:40",
+                    "end_time": "00:03:52"
+                },
+                "phase_5": {
+                    "view": "anterior",
+                    "start_time": "00:03:52",
+                    "end_time": "00:04:35"
+                },
+                "phase_6": {
+                    "view": "fissure",
+                    "start_time": "00:04:35",
+                    "end_time": "00:09:53"
+                },
+                "phase_7": {
+                    "view": "inferior",
+                    "start_time": "00:09:53",
+                    "end_time": "00:11:25"
+                },
+                "phase_8": {
+                    "view": "fissure",
+                    "start_time": "00:11:25",
+                    "end_time": "00:13:15"
+                },
+                "phase_9": {
+                    "view": "other",
+                    "start_time": "00:13:15",
+                    "end_time": "00:13:32"
+                },
+                "phase_10": {
+                    "view": "inferior",
+                    "start_time": "00:13:32",
+                    "end_time": "00:15:06"
+                }
+            }
+        }
+    }
+}
