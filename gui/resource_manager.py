@@ -61,6 +61,9 @@ class ResourceManager:
         self.max_size = cfg['max_overall_size']
         self.palette = custom_palette
 
+        # Check if video exists before creating workspace
+        if video is not None and not path.exists(video):
+            raise FileNotFoundError(f"Video file not found: {video}")
         # create temporary workspace if not specified
         if self.workspace is None:
             if images is not None:

@@ -119,7 +119,7 @@ color_palette = {
     5: (0, 255, 0),      # Right Middle Lobe - Green
     6: (150, 0, 100),    # Right Inferior (Lower) Lobe - Dark Purlple
     7: (200, 150, 100),  # Left Superior (Upper) Lobe - Beige
-    8: (200, 100, 255),  # Left Inferior (Lower) Lobe - levender
+    8: (150, 100, 50),  # Left Inferior (Lower) Lobe - levender
     9: (0, 200, 100),  # Bronchus - Dark Green
     10: (180, 0, 0),     # Right Horizontal Fissure - Dark Red
     11: (0, 0, 180),     # Right Oblique Fissure - Dark Blue
