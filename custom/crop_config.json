@@ -33,6 +33,23 @@
                 "height": 816
             },
             "video_prefix": "RLL_S9"
+        },
+        "S3-RUL": {
+            "crop_params": {
+                "left": 346,
+                "right": 346,
+                "top": 0,
+                "bottom": 72
+            },
+            "original_resolution": {
+                "width": 1920,
+                "height": 1080
+            },
+            "new_resolution": {
+                "width": 1228,
+                "height": 1008
+            },
+            "video_prefix": "S3-RUL"
         }
     }
 }

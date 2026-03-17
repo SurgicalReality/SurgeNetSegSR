@@ -93,7 +93,7 @@ def split_video_into_clips(video_path, clip_duration_seconds, output_dir=None, o
         print(f"  Clip {i+1}/{num_clips}: {clip_filename} ({start_time:.2f}s - {end_time:.2f}s)")
 
         # Extract and save clip
-        clip = video.subclip(start_time, end_time)
+        clip = video.subclipped(start_time, end_time)
         clip.write_videofile(
             str(clip_path),
             codec='libx264',
