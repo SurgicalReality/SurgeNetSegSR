@@ -107,6 +107,7 @@ class GUI(QWidget):
         self.combo.addItem("image")
         self.combo.addItem("mask")
         self.combo.addItem("davis")
+        self.combo.addItem("davis_0.5")
         self.combo.addItem("fade")
         self.combo.addItem("light")
         self.combo.addItem("popup")

@@ -49,7 +49,7 @@ grayscale_weights = np.array([[0.3, 0.59, 0.11]]).astype(np.float32)
 grayscale_weights_torch = torch.from_numpy(grayscale_weights).to(device).unsqueeze(0)
 
 
-def get_visualization(mode: Literal['image', 'mask', 'fade', 'davis', 'light', 'popup', 'layer',
+def get_visualization(mode: Literal['image', 'mask', 'fade', 'davis', 'davis_0.5', 'light', 'popup', 'layer',
                                     'rgba'], image: np.ndarray, mask: np.ndarray, layer: np.ndarray,
                       target_objects: List[int]) -> np.ndarray:
     if mode == 'image':
@@ -60,6 +60,8 @@ def get_visualization(mode: Literal['image', 'mask', 'fade', 'davis', 'light', '
         return overlay_davis(image, mask, fade=True)
     elif mode == 'davis':
         return overlay_davis(image, mask)
+    elif mode == 'davis_0.5':
+        return overlay_davis(image, mask, 0.75)
     elif mode == 'light':
         return overlay_davis(image, mask, 0.9)
     elif mode == 'popup':
