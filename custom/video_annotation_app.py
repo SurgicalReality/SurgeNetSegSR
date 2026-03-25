@@ -190,7 +190,7 @@ class VideoAnnotationApp:
     
     def load_existing_annotations(self):
         """Load existing annotations from view_annotation.json"""
-        json_path = "view_annotation.json"
+        json_path = "custom/view_annotation.json"
         
         if not os.path.exists(json_path):
             return False
@@ -556,7 +556,7 @@ class VideoAnnotationApp:
     
     def save_default(self):
         """Save to default path"""
-        if self.save_annotations_to_json("view_annotation.json"):
+        if self.save_annotations_to_json("custom/view_annotation.json"):
             self.save_status_var.set("✓ Saved to view_annotation.json")
             self.save_status_label.config(foreground="green")
             messagebox.showinfo("Success", "Annotations saved to view_annotation.json")

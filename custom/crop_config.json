@@ -50,6 +50,34 @@
                 "height": 1008
             },
             "video_prefix": "S3-RUL"
+        },
+        "S3-4_LUL_clip": {
+            "crop_params": {
+                "left": 0,
+                "right": 0,
+                "top": 0,
+                "bottom": 0
+            },
+            "original_resolution": null,
+            "new_resolution": null,
+            "video_prefix": "S3-4_LUL_clip"
+        },
+        "S4-5_LUL": {
+            "crop_params": {
+                "left": 158,
+                "right": 160,
+                "top": 0,
+                "bottom": 0
+            },
+            "original_resolution": {
+                "width": 1920,
+                "height": 1080
+            },
+            "new_resolution": {
+                "width": 1602,
+                "height": 1080
+            },
+            "video_prefix": "S4-5_LUL"
         }
     }
 }
