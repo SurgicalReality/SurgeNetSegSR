@@ -82,6 +82,7 @@ def analyze_masks(mask_dir, annotation_path=None, save_path=None):
     label_counts = Counter()  # Number of frames where label occurs
     label_areas = defaultdict(int)  # Total area (pixels) for each label
     label_frames = defaultdict(set)  # Set of frames (file paths) where label occurs
+    objects_per_frame = Counter()  # Count of how many objects visible per frame
     
     # Phase analysis variables
     phase_counts = Counter()  # Number of frames in each phase
@@ -108,6 +109,7 @@ def analyze_masks(mask_dir, annotation_path=None, save_path=None):
         local_phase_counts = Counter()
         local_view_counts = Counter()
         local_frame_phase_mapping = {}
+        local_objects_per_frame = Counter()
         
         # Try to extract video info from the workspace directory structure
         video_name = None
@@ -147,6 +149,9 @@ def analyze_masks(mask_dir, annotation_path=None, save_path=None):
                 
                 mask = np.array(Image.open(fpath))
                 unique, counts = np.unique(mask, return_counts=True)
+                # Count number of objects (non-zero labels) in this frame
+                num_objects = len([l for l in unique if l != 0])
+                local_objects_per_frame[num_objects] += 1
                 # For area
                 for label, area in zip(unique, counts):
                     local_areas[label] += area
@@ -161,6 +166,8 @@ def analyze_masks(mask_dir, annotation_path=None, save_path=None):
                 phase_counts[k] += v
             for k, v in local_view_counts.items():
                 view_counts[k] += v
+            for k, v in local_objects_per_frame.items():
+                objects_per_frame[k] += v
             frame_phase_mapping.update(local_frame_phase_mapping)
 
     threads = []
@@ -231,8 +238,29 @@ def analyze_masks(mask_dir, annotation_path=None, save_path=None):
     else:
         ax3.set_visible(False)
 
-    # Hide bottom-right plot
-    ax4.set_visible(False)
+    # Plot 4 (bottom-right): Distribution of objects per frame
+    if objects_per_frame:
+        sorted_obj_counts = sorted(objects_per_frame.keys())
+        obj_values = [objects_per_frame[k] for k in sorted_obj_counts]
+        total_frames = sum(obj_values)
+        percentages = [v / total_frames * 100 for v in obj_values]
+        
+        colors_obj = plt.cm.viridis(np.linspace(0.2, 0.8, len(sorted_obj_counts)))
+        bars4 = ax4.bar([str(k) for k in sorted_obj_counts], obj_values, color=colors_obj)
+        ax4.set_xlabel("Number of Objects Visible")
+        ax4.set_ylabel("Number of Frames")
+        ax4.set_title("Distribution of Objects Visible Per Frame")
+        y_max4 = max(obj_values) if obj_values else 1
+        ax4.set_ylim(0, y_max4 * 1.2)
+        
+        # Add percentage and n labels on bars
+        for bar, pct, n in zip(bars4, percentages, obj_values):
+            height = bar.get_height()
+            ax4.text(bar.get_x() + bar.get_width()/2., height,
+                    f'{pct:.1f}%\n(n={n})',
+                    ha='center', va='bottom', fontsize=9)
+    else:
+        ax4.set_visible(False)
 
     plt.tight_layout()
     if save_path:

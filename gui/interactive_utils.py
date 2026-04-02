@@ -78,7 +78,7 @@ def get_visualization(mode: Literal['image', 'mask', 'fade', 'davis', 'davis_0.5
         raise NotImplementedError
 
 
-def get_visualization_torch(mode: Literal['image', 'mask', 'fade', 'davis', 'light', 'popup',
+def get_visualization_torch(mode: Literal['image', 'mask', 'fade', 'davis', 'davis_0.5', 'light', 'popup',
                                           'layer', 'rgba'], image: torch.Tensor, prob: torch.Tensor,
                             layer: torch.Tensor, target_objects: List[int]) -> np.ndarray:
     if mode == 'image':
@@ -90,6 +90,8 @@ def get_visualization_torch(mode: Literal['image', 'mask', 'fade', 'davis', 'lig
         return overlay_davis_torch(image, prob, fade=True)
     elif mode == 'davis':
         return overlay_davis_torch(image, prob)
+    elif mode == 'davis_0.5':
+        return overlay_davis_torch(image, prob, 0.75)
     elif mode == 'light':
         return overlay_davis_torch(image, prob, 0.9)
     elif mode == 'popup':

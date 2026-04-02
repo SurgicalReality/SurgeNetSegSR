@@ -29,6 +29,68 @@ import os
 import re
 import shutil
 from datetime import datetime
+import numpy as np
+from PIL import Image
+
+# =============================================================================
+# LABEL CONFIGURATION
+# =============================================================================
+# Set which labels to KEEP (True) or REMOVE (False)
+# Labels set to True will be remapped to consecutive values starting from 1
+# Labels set to False will be set to 0 (background)
+LABEL_CONFIG = {
+    1: True,   # Surgical Instruments
+    2: True,   # Vein (major)
+    3: True,   # Artery (major)
+    4: True,   # Right Superior (Upper) Lobe
+    5: True,   # Right Middle Lobe
+    6: True,   # Right Inferior (Lower) Lobe
+    7: True,   # Left Superior (Upper) Lobe
+    8: True,   # Left Inferior (Lower) Lobe
+    9: True,   # Bronchus
+    10: False, # Right Horizontal Fissure
+    11: False, # Right Oblique Fissure
+    12: False, # Left Oblique Fissure
+    13: False, # Phrenic Nerve
+    14: True,  # Aorta
+    15: False, # Esophagus
+    16: False, # Lymph Nodes
+    17: True,  # Cotton Swab
+}
+
+# Build the remapping dictionary automatically from LABEL_CONFIG
+# Maps original label -> new consecutive label (or 0 if disabled)
+def build_label_remap():
+    """Build label remapping from config. Enabled labels get consecutive IDs starting from 1."""
+    remap = {}
+    new_id = 1
+    for orig_id in sorted(LABEL_CONFIG.keys()):
+        if LABEL_CONFIG[orig_id]:
+            remap[orig_id] = new_id
+            new_id += 1
+        else:
+            remap[orig_id] = 0
+    return remap
+
+LABEL_REMAP = build_label_remap()
+
+def remap_mask_labels(mask_path, output_path):
+    """Load a mask, remap labels according to LABEL_REMAP, and save."""
+    # Load mask as grayscale
+    mask = np.array(Image.open(mask_path))
+    
+    # Create output mask initialized to 0 (background)
+    remapped_mask = np.zeros_like(mask)
+    
+    # Apply remapping
+    for orig_label, new_label in LABEL_REMAP.items():
+        if new_label > 0:  # Only remap if the label is enabled
+            remapped_mask[mask == orig_label] = new_label
+    
+    # Any labels not in LABEL_REMAP are already 0 (background)
+    
+    # Save the remapped mask
+    Image.fromarray(remapped_mask.astype(np.uint8)).save(output_path)
 
 
 def main(args):
@@ -36,6 +98,9 @@ def main(args):
     video_names = args.video_names.split(",")
     out_path = args.out_path
     count = 0
+
+    # Create output path if it doesn't exist
+    os.makedirs(out_path, exist_ok=True)
     
     # For logging
     video_frame_counts = {}
@@ -94,15 +159,17 @@ def main(args):
                 '''
                 mask_idx = int(filename.rsplit(".", 1)[0])  # remove extension
 
-                # save copy to output folder
+                # save remapped mask to output folder
                 new_filename = f"{mask_idx:05d}.png"  # ensure .png extension for masks
-                shutil.copy(file_path, os.path.join(masks_out_folder, new_filename))
+                output_path = os.path.join(masks_out_folder, new_filename)
+                remap_mask_labels(file_path, output_path)
 
                 count += 1
 
         print(f"Processed video '{video_name}' and saved to DAVIS format in '{out_path}'.")
 
     train_txt_path = os.path.join(out_path, "training_list.txt")
+    os.makedirs(os.path.dirname(train_txt_path), exist_ok=True)  # create parent directories if they don't exist
     with open(train_txt_path, "w") as f:
         for video_name in video_names:
             f.write(f"{video_name.replace('.', '_')}\n")
@@ -113,6 +180,7 @@ def main(args):
     
     # Write log file
     log_path = os.path.join(out_path, "conversion_log.txt")
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)  # create parent directories if they don't exist
     with open(log_path, "w") as log_file:
         log_file.write("=" * 70 + "\n")
         log_file.write("DAVIS DATASET CONVERSION LOG\n")
@@ -123,6 +191,41 @@ def main(args):
         log_file.write(f"Output Path: {out_path}\n\n")
         
         log_file.write("-" * 70 + "\n")
+        log_file.write("LABEL REMAPPING:\n")
+        log_file.write("-" * 70 + "\n\n")
+        
+        label_names = {
+            1: "Surgical Instruments",
+            2: "Vein (major)",
+            3: "Artery (major)",
+            4: "Right Superior (Upper) Lobe",
+            5: "Right Middle Lobe",
+            6: "Right Inferior (Lower) Lobe",
+            7: "Left Superior (Upper) Lobe",
+            8: "Left Inferior (Lower) Lobe",
+            9: "Bronchus",
+            10: "Right Horizontal Fissure",
+            11: "Right Oblique Fissure",
+            12: "Left Oblique Fissure",
+            13: "Phrenic Nerve",
+            14: "Aorta",
+            15: "Esophagus",
+            16: "Lymph Nodes",
+            17: "Cotton Swab",
+        }
+        
+        log_file.write("  Original -> New  | Status   | Label Name\n")
+        log_file.write("  " + "-" * 55 + "\n")
+        for orig_id in sorted(LABEL_CONFIG.keys()):
+            new_id = LABEL_REMAP.get(orig_id, 0)
+            status = "KEPT" if LABEL_CONFIG[orig_id] else "REMOVED"
+            name = label_names.get(orig_id, "Unknown")
+            if LABEL_CONFIG[orig_id]:
+                log_file.write(f"  {orig_id:>8} -> {new_id:<4} | {status:<8} | {name}\n")
+            else:
+                log_file.write(f"  {orig_id:>8} -> 0    | {status:<8} | {name}\n")
+        
+        log_file.write("\n" + "-" * 70 + "\n")
         log_file.write("VIDEO CLIPS PROCESSED:\n")
         log_file.write("-" * 70 + "\n\n")
         
