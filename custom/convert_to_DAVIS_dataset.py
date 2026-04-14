@@ -138,7 +138,10 @@ def main(args):
     print(f"Using {num_workers} worker threads")
     
     for video_name in tqdm(video_names, desc="Processing videos", unit="video"):
+        if args.snippet_length > 0:
+            snippet_names = []
         video_folder = os.path.join(workspace_path, video_name)
+
         if not os.path.exists(video_folder):
             tqdm.write(f"Folder for video '{video_name}' not found in workspace. Skipping.")
             continue
@@ -148,18 +151,39 @@ def main(args):
         
         # images folder -> JPEGImages/video_name
         image_folder = os.path.join(video_folder, "images")
-        images_out_folder = os.path.join(out_path, "JPEGImages", video_name.replace(".", "_"))
+        if args.snippet_length > 0:
+            snippet_name = f"{video_name.replace('.', '_')}_frames_0-{args.snippet_length}"
+            snippet_names.append(snippet_name)
+            images_out_folder = os.path.join(out_path, "JPEGImages", snippet_name)
+            
+        else:
+            images_out_folder = os.path.join(out_path, "JPEGImages", video_name.replace(".", "_"))
         os.makedirs(images_out_folder, exist_ok=True)
 
         # Prepare image copy tasks
         image_files = [f for f in os.listdir(image_folder) if os.path.isfile(os.path.join(image_folder, f))]
+        # sort files by frame number (assuming filename format is something like "00000.jpg", "00001.jpg", etc.)
+        image_files.sort(key=lambda x: int(x.rsplit(".", 1)[0]))
+
         image_tasks = []
+        snippet_frame_counter = 0
         for filename in image_files:
+            file_idx = int(filename.rsplit(".", 1)[0]) # get file which contains the current frame_number
+            # if snippet length is met, create new snippet (reset counter) - this will create multiple snippets for a video if snippet_length is set
+            if args.snippet_length > 0 and snippet_frame_counter == args.snippet_length:
+                snippet_frame_counter = 0
+                snippet_name = f"{video_name.replace('.', '_')}_frames_{file_idx}-{file_idx + args.snippet_length}"
+                snippet_names.append(snippet_name)
+                images_out_folder = os.path.join(out_path, "JPEGImages", snippet_name)
+                os.makedirs(images_out_folder, exist_ok=True)
             file_path = os.path.join(image_folder, filename)
-            file_idx = int(filename.rsplit(".", 1)[0])
-            new_filename = f"{file_idx:05d}.jpg"
+            if (args.snippet_length > 0):
+                new_filename = f"{(file_idx % args.snippet_length):05d}.jpg"
+            else:
+                new_filename = f"{file_idx:05d}.jpg"
             dst_path = os.path.join(images_out_folder, new_filename)
             image_tasks.append((file_path, dst_path))
+            snippet_frame_counter += 1
         
         # Process images in parallel
         with ThreadPoolExecutor(max_workers=num_workers) as executor:
@@ -175,18 +199,33 @@ def main(args):
         
         # masks folder -> Annotations/video_name
         mask_folder = os.path.join(video_folder, "masks")
-        masks_out_folder = os.path.join(out_path, "Annotations", video_name.replace(".", "_"))
+        if args.snippet_length > 0:
+            masks_out_folder = os.path.join(out_path, "Annotations", video_name.replace(".", "_") + f"_frames_0-{args.snippet_length}")
+        else:
+            masks_out_folder = os.path.join(out_path, "Annotations", video_name.replace(".", "_"))
         os.makedirs(masks_out_folder, exist_ok=True)
 
         # Prepare mask remap tasks
         mask_files = [f for f in os.listdir(mask_folder) if os.path.isfile(os.path.join(mask_folder, f))]
+        mask_files.sort(key=lambda x: int(x.rsplit(".", 1)[0]))
         mask_tasks = []
+        mask_snippet_frame_counter = 0
         for filename in mask_files:
-            file_path = os.path.join(mask_folder, filename)
             mask_idx = int(filename.rsplit(".", 1)[0])
-            new_filename = f"{mask_idx:05d}.png"
+            # if snippet length is met, create new snippet (reset counter) - this will create multiple snippets for a video if snippet_length is set
+            if args.snippet_length > 0 and mask_snippet_frame_counter == args.snippet_length:
+                mask_snippet_frame_counter = 0
+                masks_out_folder = os.path.join(out_path, "Annotations", video_name.replace(".", "_") + f"_frames_{mask_idx}-{mask_idx + args.snippet_length}")
+                os.makedirs(masks_out_folder, exist_ok=True)
+            file_path = os.path.join(mask_folder, filename)
+            if (args.snippet_length > 0):
+                new_filename = f"{(mask_idx % args.snippet_length):05d}.jpg"
+            else:
+                new_filename = f"{mask_idx:05d}.jpg"
+            
             output_path = os.path.join(masks_out_folder, new_filename)
             mask_tasks.append((file_path, output_path))
+            mask_snippet_frame_counter += 1
         
         # Process masks in parallel
         with ThreadPoolExecutor(max_workers=num_workers) as executor:
@@ -197,8 +236,12 @@ def main(args):
 
     train_txt_path = os.path.join(out_path, "training_list.txt")
     with open(train_txt_path, "w") as f:
-        for video_name in video_names:
-            f.write(f"{video_name.replace('.', '_')}\n")
+        if args.snippet_length > 0:
+            for snippet_name in snippet_names:
+                f.write(f"{snippet_name.replace('.', '_')}\n")
+        else:
+            for video_name in video_names:
+                f.write(f"{video_name.replace('.', '_')}\n")
     print(f"Created training list at '{train_txt_path}' with {len(video_names)} videos.")
 
     # Create empty val_list.txt
@@ -280,6 +323,7 @@ if __name__ == "__main__":
 
     # arguments
     parser = argparse.ArgumentParser(description="Convert SurgNetSeg output to DAVIS dataset format.")
+    parser.add_argument("--snippet_length", type=int, default=-1, help="Number of frames for each video snippet (default: -1, meaning no snippet, 1->1 translation)")
     parser.add_argument("--workspace_path", type=str, default="./workspace/", help="Path to the SurgNetSeg workspace (subdirectories will be used as video names)")
     parser.add_argument("--out_path", type=str, required=True, help="Path to the output DAVIS dataset")
     parser.add_argument("--threads", type=int, default=8, help="Number of worker threads (default: auto-detect, max 8)")
