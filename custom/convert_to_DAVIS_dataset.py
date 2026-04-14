@@ -21,16 +21,19 @@ ImageSets/
 		train.txt # this contains the video ids used for training
 		val.txt # opt.?
 Usage:
-    python convert_to_DAVIS_dataset.py --workspace_path <path_to_workspace> --video_names <video1,video2,...> --out_path <output_davis_path>
+    python convert_to_DAVIS_dataset.py --workspace_path <path_to_workspace> --out_path <output_davis_path>
 
+Video names are automatically extracted from subdirectory names in the workspace_path.
 """
 
 import os
 import re
 import shutil
 from datetime import datetime
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import numpy as np
 from PIL import Image
+from tqdm import tqdm
 
 # =============================================================================
 # LABEL CONFIGURATION
@@ -93,11 +96,34 @@ def remap_mask_labels(mask_path, output_path):
     Image.fromarray(remapped_mask.astype(np.uint8)).save(output_path)
 
 
+def copy_image_task(src_path, dst_path):
+    """Task for copying a single image file."""
+    shutil.copy(src_path, dst_path)
+    return 1
+
+
+def remap_mask_task(mask_path, output_path):
+    """Task for remapping and saving a single mask file."""
+    remap_mask_labels(mask_path, output_path)
+    return 1
+
+
 def main(args):
     workspace_path = args.workspace_path
-    video_names = args.video_names.split(",")
     out_path = args.out_path
     count = 0
+
+    # Dynamically extract video names from subdirectories in workspace_path
+    video_names = [
+        d for d in os.listdir(workspace_path)
+        if os.path.isdir(os.path.join(workspace_path, d))
+    ]
+    
+    if not video_names:
+        print(f"No subdirectories found in workspace path: {workspace_path}")
+        return
+    
+    print(f"Found {len(video_names)} video folders: {video_names}")
 
     # Create output path if it doesn't exist
     os.makedirs(out_path, exist_ok=True)
@@ -107,10 +133,14 @@ def main(args):
     total_frames = 0
     start_time = datetime.now()
 
-    for video_name in video_names:
+    # Use thread pool for parallel processing
+    num_workers = args.threads if args.threads else min(8, os.cpu_count() or 4)
+    print(f"Using {num_workers} worker threads")
+    
+    for video_name in tqdm(video_names, desc="Processing videos", unit="video"):
         video_folder = os.path.join(workspace_path, video_name)
         if not os.path.exists(video_folder):
-            print(f"Folder for video '{video_name}' not found in workspace. Skipping.")
+            tqdm.write(f"Folder for video '{video_name}' not found in workspace. Skipping.")
             continue
         
         # Track frames for this video
@@ -121,21 +151,22 @@ def main(args):
         images_out_folder = os.path.join(out_path, "JPEGImages", video_name.replace(".", "_"))
         os.makedirs(images_out_folder, exist_ok=True)
 
-        for filename in os.listdir(image_folder):
+        # Prepare image copy tasks
+        image_files = [f for f in os.listdir(image_folder) if os.path.isfile(os.path.join(image_folder, f))]
+        image_tasks = []
+        for filename in image_files:
             file_path = os.path.join(image_folder, filename)
-            if os.path.isfile(file_path):
-                # clean filename to be compatible with SAM 2.1
-                '''
-                new_filename = filename.replace(".", "_", filename.count(".") - 1)
-                if not re.search(r"_\d+\.\w+$", new_filename):
-                    new_filename = new_filename.replace(".", "_1.")
-                '''
-                file_idx = int(filename.rsplit(".", 1)[0])  # remove extension
-                new_filename = f"{file_idx:05d}.jpg"
-
-                # save copy to output folder
-                shutil.copy(file_path, os.path.join(images_out_folder, new_filename))
-                count += 1
+            file_idx = int(filename.rsplit(".", 1)[0])
+            new_filename = f"{file_idx:05d}.jpg"
+            dst_path = os.path.join(images_out_folder, new_filename)
+            image_tasks.append((file_path, dst_path))
+        
+        # Process images in parallel
+        with ThreadPoolExecutor(max_workers=num_workers) as executor:
+            futures = [executor.submit(copy_image_task, src, dst) for src, dst in image_tasks]
+            for future in tqdm(as_completed(futures), total=len(futures), 
+                              desc=f"  Copying images ({video_name})", unit="img", leave=False):
+                count += future.result()
                 video_frames += 1
         
         # Store frame count for this video
@@ -147,34 +178,34 @@ def main(args):
         masks_out_folder = os.path.join(out_path, "Annotations", video_name.replace(".", "_"))
         os.makedirs(masks_out_folder, exist_ok=True)
 
-        for filename in os.listdir(mask_folder):
+        # Prepare mask remap tasks
+        mask_files = [f for f in os.listdir(mask_folder) if os.path.isfile(os.path.join(mask_folder, f))]
+        mask_tasks = []
+        for filename in mask_files:
             file_path = os.path.join(mask_folder, filename)
-            if os.path.isfile(file_path):
-                '''
-                # clean filename to be compatible with SAM 2.1
-                new_filename = filename.replace(".", "_", filename.count(".") - 1)
-                #
-                if not re.search(r"_\d+\.\w+$", new_filename):
-                    new_filename = new_filename.replace(".", "_1.")
-                '''
-                mask_idx = int(filename.rsplit(".", 1)[0])  # remove extension
-
-                # save remapped mask to output folder
-                new_filename = f"{mask_idx:05d}.png"  # ensure .png extension for masks
-                output_path = os.path.join(masks_out_folder, new_filename)
-                remap_mask_labels(file_path, output_path)
-
-                count += 1
-
-        print(f"Processed video '{video_name}' and saved to DAVIS format in '{out_path}'.")
+            mask_idx = int(filename.rsplit(".", 1)[0])
+            new_filename = f"{mask_idx:05d}.png"
+            output_path = os.path.join(masks_out_folder, new_filename)
+            mask_tasks.append((file_path, output_path))
+        
+        # Process masks in parallel
+        with ThreadPoolExecutor(max_workers=num_workers) as executor:
+            futures = [executor.submit(remap_mask_task, src, dst) for src, dst in mask_tasks]
+            for future in tqdm(as_completed(futures), total=len(futures),
+                              desc=f"  Remapping masks ({video_name})", unit="mask", leave=False):
+                count += future.result()
 
     train_txt_path = os.path.join(out_path, "training_list.txt")
-    os.makedirs(os.path.dirname(train_txt_path), exist_ok=True)  # create parent directories if they don't exist
     with open(train_txt_path, "w") as f:
         for video_name in video_names:
             f.write(f"{video_name.replace('.', '_')}\n")
+    print(f"Created training list at '{train_txt_path}' with {len(video_names)} videos.")
 
-        print(f"Created training list at '{train_txt_path}' with {len(video_names)} videos.")
+    # Create empty val_list.txt
+    val_txt_path = os.path.join(out_path, "val_list.txt")
+    with open(val_txt_path, "w") as f:
+        pass  # Create empty file
+    print(f"Created empty validation list at '{val_txt_path}'.")
 
     print(f"Total files processed: {count}")
     
@@ -249,9 +280,9 @@ if __name__ == "__main__":
 
     # arguments
     parser = argparse.ArgumentParser(description="Convert SurgNetSeg output to DAVIS dataset format.")
-    parser.add_argument("--workspace_path", type=str, help="Path to the SurgNetSeg workspace")
-    parser.add_argument("--video_names", type=str, help="Comma-separated list of video names (without extension)")
-    parser.add_argument("--out_path", type=str, help="Path to the output DAVIS dataset")
+    parser.add_argument("--workspace_path", type=str, default="./workspace/", help="Path to the SurgNetSeg workspace (subdirectories will be used as video names)")
+    parser.add_argument("--out_path", type=str, required=True, help="Path to the output DAVIS dataset")
+    parser.add_argument("--threads", type=int, default=8, help="Number of worker threads (default: auto-detect, max 8)")
     args = parser.parse_args()
 
     main(args)
