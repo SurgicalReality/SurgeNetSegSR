@@ -136,10 +136,10 @@ def main(args):
     # Use thread pool for parallel processing
     num_workers = args.threads if args.threads else min(8, os.cpu_count() or 4)
     print(f"Using {num_workers} worker threads")
+    if args.snippet_length > 0:
+        snippet_names = []
     
     for video_name in tqdm(video_names, desc="Processing videos", unit="video"):
-        if args.snippet_length > 0:
-            snippet_names = []
         video_folder = os.path.join(workspace_path, video_name)
 
         if not os.path.exists(video_folder):
@@ -219,9 +219,9 @@ def main(args):
                 os.makedirs(masks_out_folder, exist_ok=True)
             file_path = os.path.join(mask_folder, filename)
             if (args.snippet_length > 0):
-                new_filename = f"{(mask_idx % args.snippet_length):05d}.jpg"
+                new_filename = f"{(mask_idx % args.snippet_length):05d}.png"
             else:
-                new_filename = f"{mask_idx:05d}.jpg"
+                new_filename = f"{mask_idx:05d}.png"
             
             output_path = os.path.join(masks_out_folder, new_filename)
             mask_tasks.append((file_path, output_path))
