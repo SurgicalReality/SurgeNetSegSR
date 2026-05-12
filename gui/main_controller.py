@@ -25,6 +25,7 @@ from gui.interactive_utils import *
 from gui.resource_manager import ResourceManager
 from gui.gui import GUI
 from gui.click_controller import ClickController
+from gui.sam2_click_controller import SAM2ClickController
 from gui.reader import PropagationReader, get_data_loader
 from gui.exporter import convert_frames_to_video, convert_mask_to_binary
 from gui.cutie.utils.download_models import download_models_if_needed
@@ -127,7 +128,8 @@ class MainController():
         self.in_polygon_mode = False
 
         self.gui.show()
-        self.gui.text('Initialized.')
+        interactive_model_type = self.cfg.get('interactive_model', 'ritm').upper()
+        self.gui.text(f'Initialized with {interactive_model_type} for interactive segmentation.')
         self.initialized = True
 
         # try to load the default overlay
@@ -141,7 +143,26 @@ class MainController():
         model_weights = torch.load(self.cfg.weights, map_location=self.device)
         self.cutie.load_weights(model_weights)
 
-        self.click_ctrl = ClickController(self.cfg.ritm_weights, device=self.device)
+        # Initialize interactive segmentation model (RITM or SAM2)
+        interactive_model_type = self.cfg.get('interactive_model', 'ritm').lower()
+        
+        if interactive_model_type == 'sam2':
+            print('Loading SAM2 model...')
+            try:
+                sam2_config = self.cfg.get('sam2_config', 'sam2_hiera_l.yaml')
+                sam2_checkpoint = self.cfg.get('sam2_checkpoint', None)
+                self.click_ctrl = SAM2ClickController(
+                    config_path=sam2_config,
+                    checkpoint_path=sam2_checkpoint,
+                    device=self.device
+                )
+                print('SAM2 model loaded successfully.')
+            except Exception as e:
+                print(f'Failed to load SAM2: {e}. Falling back to RITM.')
+                self.click_ctrl = ClickController(self.cfg.ritm_weights, device=self.device)
+        else:
+            # Default to RITM
+            self.click_ctrl = ClickController(self.cfg.ritm_weights, device=self.device)
 
     def hit_number_key(self, number: int):
         if number == self.curr_object:

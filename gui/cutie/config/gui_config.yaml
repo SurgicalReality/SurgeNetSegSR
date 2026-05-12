@@ -12,6 +12,15 @@ amp: True
 weights: gui/weights/cutie-surgenetseg-50k.pth
 ritm_weights: gui/weights/ritm-surgenetseg-50k.pth
 
+# Interactive segmentation model selection
+# Options: 'ritm' or 'sam2'
+interactive_model: ritm
+
+# SAM2 configuration (only used if interactive_model: sam2)
+# Use an absolute path to a custom config file, OR a Hydra-relative path like 'configs/sam2.1/sam2.1_hiera_s.yaml'
+sam2_config: C:\Users\Skyfinder\Projects\SurgeNetSeg\custom\sam2\sam2.1_hiera_s_512.yaml
+sam2_checkpoint: C:\Users\Skyfinder\Projects\SurgeNetSeg\custom\sam2\hiera_s_mose_512_checkpoint.pt
+
 # All "size" parameters represent the length of the shorter edge
 # maximum internal processing size; reducing this speeds up processing
 max_internal_size: 480
