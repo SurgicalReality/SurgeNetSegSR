@@ -29,6 +29,8 @@ Video names are automatically extracted from subdirectory names in the workspace
 import os
 import re
 import shutil
+import json
+import random
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import numpy as np
@@ -77,6 +79,46 @@ def build_label_remap():
 
 LABEL_REMAP = build_label_remap()
 
+def load_split_config(config_path):
+    """Load the train/val/test split configuration from JSON file."""
+    with open(config_path, 'r') as f:
+        return json.load(f)
+
+def save_split_config(config, config_path):
+    """Save the split configuration back to JSON file."""
+    with open(config_path, 'w') as f:
+        json.dump(config, f, indent=2)
+
+def get_video_split(video_name, config):
+    """
+    Determine which split a video belongs to based on source_video_patterns.
+    Returns: 'train_val' or 'test'
+    """
+    source_patterns = config.get('source_video_patterns', {})
+    
+    for split_type, patterns in source_patterns.items():
+        for pattern in patterns:
+            if video_name.startswith(pattern):
+                return split_type
+    
+    return None  # Video not matched to any pattern
+
+def perform_train_val_split(train_val_videos, ratio, seed=42):
+    """
+    Split train_val videos into train and val sets based on ratio.
+    ratio: 0.8 means 80% train, 20% val
+    Returns: (train_clips, val_clips)
+    """
+    random.seed(seed)
+    shuffled = train_val_videos.copy()
+    random.shuffle(shuffled)
+    
+    split_idx = int(len(shuffled) * ratio)
+    train_clips = shuffled[:split_idx]
+    val_clips = shuffled[split_idx:]
+    
+    return train_clips, val_clips
+
 def remap_mask_labels(mask_path, output_path):
     """Load a mask, remap labels according to LABEL_REMAP, and save."""
     # Load mask as grayscale
@@ -111,7 +153,16 @@ def remap_mask_task(mask_path, output_path):
 def main(args):
     workspace_path = args.workspace_path
     out_path = args.out_path
+    split_config_path = args.split_config
     count = 0
+
+    # Load split configuration
+    try:
+        split_config = load_split_config(split_config_path)
+        print(f"Loaded split config from {split_config_path}")
+    except FileNotFoundError:
+        print(f"Error: Split config file not found at {split_config_path}")
+        return
 
     # Dynamically extract video names from subdirectories in workspace_path
     video_names = [
@@ -128,10 +179,15 @@ def main(args):
     # Create output path if it doesn't exist
     os.makedirs(out_path, exist_ok=True)
     
-    # For logging
+    # For logging and split tracking
     video_frame_counts = {}
     total_frames = 0
     start_time = datetime.now()
+    
+    # Track clips by split
+    train_val_clips = []
+    test_clips = []
+    split_assignment = {}  # Maps video name to split type
 
     # Use thread pool for parallel processing
     num_workers = args.threads if args.threads else min(8, os.cpu_count() or 4)
@@ -145,6 +201,14 @@ def main(args):
         if not os.path.exists(video_folder):
             tqdm.write(f"Folder for video '{video_name}' not found in workspace. Skipping.")
             continue
+        
+        # Determine which split this video belongs to
+        split_type = get_video_split(video_name, split_config)
+        if split_type is None:
+            tqdm.write(f"Warning: Video '{video_name}' doesn't match any source pattern. Skipping.")
+            continue
+        
+        split_assignment[video_name] = split_type
         
         # Track frames for this video
         video_frames = 0
@@ -197,6 +261,12 @@ def main(args):
         video_frame_counts[video_name.replace(".", "_")] = video_frames
         total_frames += video_frames
         
+        # Track clip for split assignment
+        if split_type == "train_val":
+            train_val_clips.append(video_name)
+        elif split_type == "test":
+            test_clips.append(video_name)
+        
         # masks folder -> Annotations/video_name
         mask_folder = os.path.join(video_folder, "masks")
         if args.snippet_length > 0:
@@ -234,21 +304,39 @@ def main(args):
                               desc=f"  Remapping masks ({video_name})", unit="mask", leave=False):
                 count += future.result()
 
+    # Perform train/val split
+    train_val_ratio = split_config.get('train_val_ratio', 0.8)
+    train_clips, val_clips = perform_train_val_split(train_val_clips, train_val_ratio)
+    
+    # Update split config with clips
+    split_config['clips'] = {
+        'train': train_clips,
+        'val': val_clips,
+        'test': test_clips
+    }
+    
+    # Save updated config
+    save_split_config(split_config, split_config_path)
+    print(f"Updated split config saved to {split_config_path}")
+    
+    # Create training/val/test list files
     train_txt_path = os.path.join(out_path, "training_list.txt")
     with open(train_txt_path, "w") as f:
-        if args.snippet_length > 0:
-            for snippet_name in snippet_names:
-                f.write(f"{snippet_name.replace('.', '_')}\n")
-        else:
-            for video_name in video_names:
-                f.write(f"{video_name.replace('.', '_')}\n")
-    print(f"Created training list at '{train_txt_path}' with {len(video_names)} videos.")
+        for clip in train_clips:
+            f.write(f"{clip.replace('.', '_')}\n")
+    print(f"Created training list at '{train_txt_path}' with {len(train_clips)} videos.")
 
-    # Create empty val_list.txt
     val_txt_path = os.path.join(out_path, "val_list.txt")
     with open(val_txt_path, "w") as f:
-        pass  # Create empty file
-    print(f"Created empty validation list at '{val_txt_path}'.")
+        for clip in val_clips:
+            f.write(f"{clip.replace('.', '_')}\n")
+    print(f"Created validation list at '{val_txt_path}' with {len(val_clips)} videos.")
+
+    test_txt_path = os.path.join(out_path, "test_list.txt")
+    with open(test_txt_path, "w") as f:
+        for clip in test_clips:
+            f.write(f"{clip.replace('.', '_')}\n")
+    print(f"Created test list at '{test_txt_path}' with {len(test_clips)} videos.")
 
     print(f"Total files processed: {count}")
     
@@ -327,6 +415,7 @@ if __name__ == "__main__":
     parser.add_argument("--workspace_path", type=str, default="./workspace/", help="Path to the SurgNetSeg workspace (subdirectories will be used as video names)")
     parser.add_argument("--out_path", type=str, required=True, help="Path to the output DAVIS dataset")
     parser.add_argument("--threads", type=int, default=8, help="Number of worker threads (default: auto-detect, max 8)")
+    parser.add_argument("--split_config", type=str, default="./custom/train_test_val_split.json", help="Path to the split configuration JSON file")
     args = parser.parse_args()
 
     main(args)

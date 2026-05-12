@@ -1,0 +1,45 @@
+{
+  "train_val_ratio": 0.8,
+  "source_video_patterns": {
+    "train_val": [
+      "RLL_S9",
+      "S3-RUL",
+      "S4-5_LUL",
+      "s8-s10_LLL"
+    ],
+    "test": [
+      "S7-RLL"
+    ]
+  },
+  "clips": {
+    "train": [
+      "s8-s10_LLL_0660_0690_sec_cropped.mp4",
+      "RLL_S9_0480_0510_sec_cropped.mp4",
+      "RLL_S9_0120_0150_sec_cropped.mp4",
+      "S4-5_LUL_0630_0660_sec_cropped.mp4",
+      "S3-RUL_0120_0150_sec_cropped.mp4",
+      "S3-RUL_0600_0630_sec_cropped.mp4",
+      "s8-s10_LLL_0060_0090_sec_cropped.mp4",
+      "s8-s10_LLL_0570_0600_sec_cropped.mp4",
+      "RLL_S9_0690_0720_sec_cropped.mp4",
+      "S4-5_LUL_0540_0570_sec_cropped.mp4",
+      "s8-s10_LLL_0240_0270_sec_cropped.mp4",
+      "S4-5_LUL_0570_0600_sec_cropped.mp4",
+      "S3-RUL_0540_0570_sec_cropped.mp4",
+      "RLL_S9_0090_0120_sec_cropped.mp4",
+      "S3-RUL_0570_0600_sec_cropped.mp4",
+      "RLL_S9_0450_0480_sec_cropped.mp4",
+      "s8-s10_LLL_0150_0180_sec_cropped.mp4"
+    ],
+    "val": [
+      "RLL_S9_0720_0750_sec_cropped.mp4",
+      "RLL_S9_0750_0780_sec_cropped.mp4",
+      "RLL_S9_0060_0090_sec_cropped.mp4",
+      "RLL_S9_0150_0180_sec_cropped.mp4",
+      "s8-s10_LLL_0630_0660_sec_cropped.mp4"
+    ],
+    "test": [
+      "S7-RLL_0600_0630_sec_cropped.mp4"
+    ]
+  }
+}

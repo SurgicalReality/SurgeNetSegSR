@@ -21,6 +21,31 @@ sys.modules['palette'] = palette
 spec.loader.exec_module(palette)
 
 
+# =============================================================================
+# LABEL DISPLAY SETTINGS
+# Set to False to exclude a label from all figures
+# =============================================================================
+LABEL_DISPLAY = {
+    1:  True,   # Surgical Instruments
+    2:  True,   # Vein (major)
+    3:  True,   # Artery (major)
+    4:  True,   # Right Superior (Upper) Lobe
+    5:  True,   # Right Middle Lobe
+    6:  True,   # Right Inferior (Lower) Lobe
+    7:  True,   # Left Superior (Upper) Lobe
+    8:  True,   # Left Inferior (Lower) Lobe
+    9:  True,   # Bronchus
+    10: True,   # Right Horizontal Fissure
+    11: True,   # Right Oblique Fissure
+    12: True,   # Left Oblique Fissure
+    13: True,   # Phrenic Nerve
+    14: True,   # Aorta
+    15: True,   # Esophagus
+    16: False,  # Lymph Nodes
+    17: True,   # Cotton Swab
+}
+
+
 def time_to_seconds(time_str):
     """Convert time string 'HH:MM:SS' to seconds."""
     parts = time_str.split(':')
@@ -78,7 +103,13 @@ def get_frame_phase(frame_num, fps, video_phases):
     return None, None
 
 
-def analyze_masks(mask_dir, annotation_path=None, save_path=None):
+def load_split_config(config_path):
+    """Load the train/val/test split configuration from JSON file."""
+    with open(config_path, 'r') as f:
+        return json.load(f)
+
+def collect_split_data(mask_dir, annotation_path=None, split_name=None, split_clips=None):
+    """Collect mask statistics for a split. Returns a data dict."""
     label_counts = Counter()  # Number of frames where label occurs
     label_areas = defaultdict(int)  # Total area (pixels) for each label
     label_frames = defaultdict(set)  # Set of frames (file paths) where label occurs
@@ -97,6 +128,18 @@ def analyze_masks(mask_dir, annotation_path=None, save_path=None):
         print(f"No 'masks' subfolders found in {mask_dir}")
         return
     print(f"Found {len(masks_dirs)} 'masks' subfolders.")
+    
+    # Filter masks_dirs by split_clips if provided
+    if split_clips is not None:
+        filtered_dirs = []
+        for masks_dir in masks_dirs:
+            # Extract clip name from path
+            clip_dir = os.path.dirname(masks_dir)
+            clip_name = os.path.basename(clip_dir)
+            if clip_name in split_clips:
+                filtered_dirs.append(masks_dir)
+        masks_dirs = filtered_dirs
+        print(f"Filtered to {len(masks_dirs)} 'masks' subfolders for {split_name} split.")
     
     # Load annotation data if provided
     annotation_data = None if annotation_path is None else load_annotation_data(annotation_path)
@@ -182,103 +225,174 @@ def analyze_masks(mask_dir, annotation_path=None, save_path=None):
     for label, frames in label_frames.items():
         label_counts[label] = len(frames)
 
-    # Exclude label 0 (background) from the plot
-    filtered_labels = [l for l in sorted(label_counts.keys()) if l != 0]
+    return {
+        'label_counts': label_counts,
+        'label_areas': label_areas,
+        'objects_per_frame': objects_per_frame,
+        'view_counts': view_counts,
+        'phase_counts': phase_counts,
+    }
 
-    # Prepare data for both plots
-    values_frames = [label_counts[l] for l in filtered_labels]
-    values_area = [label_areas[l] for l in filtered_labels]
-    label_names = [palette.custom_names.get(l, str(l)) for l in filtered_labels]
+
+def plot_combined(split_data, save_path=None):
+    """
+    Plot all splits in a single figure with 4 subplots.
+    split_data: dict of {split_name: data_dict} from collect_split_data()
+    Bars use the same label colors; splits are distinguished by hatch pattern.
+    """
+    SPLIT_HATCHES = {'train': '', 'val': '///', 'test': 'xxx'}
+    SPLIT_EDGE_COLORS = {'train': 'none', 'val': '#333333', 'test': '#333333'}
+
+    # Gather all labels present across all splits (filtered by LABEL_DISPLAY)
+    all_labels = sorted(
+        {l for data in split_data.values() for l in data['label_counts'] if l != 0 and LABEL_DISPLAY.get(l, True)}
+    )
+    label_names = [palette.custom_names.get(l, str(l)) for l in all_labels]
     bar_colors = []
-    for l in filtered_labels:
+    for l in all_labels:
         if l == 1:
             bar_colors.append((0.7, 0.7, 0.7))
         else:
             bar_colors.append(tuple(np.array(palette.color_palette.get(l, (128, 128, 128))) / 255.0))
 
-    # Create figure with 2x2 grid layout (3 plots used)
-    fig, axes = plt.subplots(2, 2, figsize=(14, 12))
+    splits = list(split_data.keys())
+    n_splits = len(splits)
+    n_labels = len(all_labels)
+    width = 0.8 / n_splits
+    x = np.arange(n_labels)
+
+    fig, axes = plt.subplots(2, 2, figsize=(max(16, n_labels * 1.2), 13))
+    fig.suptitle("Dataset Split Analysis", fontsize=17, fontweight='bold')
     ax1, ax2 = axes[0, 0], axes[0, 1]
     ax3, ax4 = axes[1, 0], axes[1, 1]
 
-    # Plot 1 (top-left): Number of frames where label occurs
-    bars1 = ax1.bar(label_names, values_frames, color=bar_colors)
+    # ---- Plot 1: Frames per label ----
+    for i, split in enumerate(splits):
+        data = split_data[split]
+        vals = [data['label_counts'].get(l, 0) for l in all_labels]
+        offset = (i - n_splits / 2 + 0.5) * width
+        ax1.bar(x + offset, vals, width=width, color=bar_colors,
+                hatch=SPLIT_HATCHES[split], edgecolor=SPLIT_EDGE_COLORS[split],
+                linewidth=0.8, label=split.upper())
     ax1.set_ylabel("Number of Frames")
-    ax1.set_title("Number of Frames Where Label Occurs")
+    ax1.set_title("Frames Where Label Occurs")
+    ax1.set_xticks(x)
     ax1.set_xticklabels(label_names, rotation=45, ha='right')
-    y_max1 = max(values_frames) if values_frames else 1
-    ax1.set_ylim(0, y_max1 * 1.1)
+    ax1.legend()
 
-    # Plot 2 (top-right): Total area (pixels) for each label
-    bars2 = ax2.bar(label_names, values_area, color=bar_colors)
+    # ---- Plot 2: Total area per label ----
+    for i, split in enumerate(splits):
+        data = split_data[split]
+        vals = [data['label_areas'].get(l, 0) for l in all_labels]
+        offset = (i - n_splits / 2 + 0.5) * width
+        ax2.bar(x + offset, vals, width=width, color=bar_colors,
+                hatch=SPLIT_HATCHES[split], edgecolor=SPLIT_EDGE_COLORS[split],
+                linewidth=0.8, label=split.upper())
     ax2.set_ylabel("Total Area (pixels)")
     ax2.set_title("Total Area Covered by Each Label")
+    ax2.set_xticks(x)
     ax2.set_xticklabels(label_names, rotation=45, ha='right')
-    y_max2 = max(values_area) if values_area else 1
-    ax2.set_ylim(0, y_max2 * 1.1)
+    ax2.legend()
 
-    # Plot 3 (bottom-left): Distribution of frames by view
-    if view_counts:
-        sorted_views = sorted(view_counts.keys())
-        view_values = [view_counts[v] for v in sorted_views]
-        colors_views = plt.cm.Set3(np.linspace(0, 1, len(sorted_views)))
-        bars3 = ax3.bar(sorted_views, view_values, color=colors_views)
+    # ---- Plot 3: View distribution ----
+    all_views = sorted({v for data in split_data.values() for v in data['view_counts']})
+    if all_views:
+        colors_views = plt.cm.Set3(np.linspace(0, 1, len(all_views)))
+        view_color_map = {v: colors_views[i] for i, v in enumerate(all_views)}
+        x_views = np.arange(len(all_views))
+        for i, split in enumerate(splits):
+            vals = [split_data[split]['view_counts'].get(v, 0) for v in all_views]
+            offset = (i - n_splits / 2 + 0.5) * width
+            ax3.bar(x_views + offset, vals, width=width,
+                    color=[view_color_map[v] for v in all_views],
+                    hatch=SPLIT_HATCHES[split], edgecolor=SPLIT_EDGE_COLORS[split],
+                    linewidth=0.8, label=split.upper())
         ax3.set_ylabel("Number of Annotated Frames")
-        ax3.set_title("Distribution of Annotated Frames by Surgical View")
-        ax3.set_xticklabels(sorted_views, rotation=45, ha='right')
-        y_max3 = max(view_values) if view_values else 1
-        ax3.set_ylim(0, y_max3 * 1.1)
-        # Add value labels on bars
-        for bar in bars3:
-            height = bar.get_height()
-            if height > 0:
-                ax3.text(bar.get_x() + bar.get_width()/2., height,
-                        f'{int(height)}',
-                        ha='center', va='bottom', fontsize=9)
+        ax3.set_title("Frames by Surgical View")
+        ax3.set_xticks(x_views)
+        ax3.set_xticklabels(all_views, rotation=45, ha='right')
+        ax3.legend()
     else:
         ax3.set_visible(False)
 
-    # Plot 4 (bottom-right): Distribution of objects per frame
-    if objects_per_frame:
-        sorted_obj_counts = sorted(objects_per_frame.keys())
-        obj_values = [objects_per_frame[k] for k in sorted_obj_counts]
-        total_frames = sum(obj_values)
-        percentages = [v / total_frames * 100 for v in obj_values]
-        
-        colors_obj = plt.cm.viridis(np.linspace(0.2, 0.8, len(sorted_obj_counts)))
-        bars4 = ax4.bar([str(k) for k in sorted_obj_counts], obj_values, color=colors_obj)
+    # ---- Plot 4: Objects per frame distribution ----
+    all_obj_counts = sorted({k for data in split_data.values() for k in data['objects_per_frame']})
+    if all_obj_counts:
+        x_obj = np.arange(len(all_obj_counts))
+        colors_obj = plt.cm.viridis(np.linspace(0.2, 0.8, len(all_obj_counts)))
+        for i, split in enumerate(splits):
+            data = split_data[split]
+            total = sum(data['objects_per_frame'].values()) or 1
+            vals = [data['objects_per_frame'].get(k, 0) for k in all_obj_counts]
+            pcts = [v / total * 100 for v in vals]
+            offset = (i - n_splits / 2 + 0.5) * width
+            bars = ax4.bar(x_obj + offset, vals, width=width,
+                           color=colors_obj,
+                           hatch=SPLIT_HATCHES[split], edgecolor=SPLIT_EDGE_COLORS[split],
+                           linewidth=0.8, label=split.upper())
+            for bar, pct, n in zip(bars, pcts, vals):
+                if n > 0:
+                    ax4.text(bar.get_x() + bar.get_width() / 2., bar.get_height(),
+                             f'{pct:.0f}%', ha='center', va='bottom', fontsize=7)
         ax4.set_xlabel("Number of Objects Visible")
         ax4.set_ylabel("Number of Frames")
-        ax4.set_title("Distribution of Objects Visible Per Frame")
-        y_max4 = max(obj_values) if obj_values else 1
-        ax4.set_ylim(0, y_max4 * 1.2)
-        
-        # Add percentage and n labels on bars
-        for bar, pct, n in zip(bars4, percentages, obj_values):
-            height = bar.get_height()
-            ax4.text(bar.get_x() + bar.get_width()/2., height,
-                    f'{pct:.1f}%\n(n={n})',
-                    ha='center', va='bottom', fontsize=9)
+        ax4.set_title("Objects Visible Per Frame")
+        ax4.set_xticks(x_obj)
+        ax4.set_xticklabels([str(k) for k in all_obj_counts])
+        ax4.legend()
     else:
         ax4.set_visible(False)
 
     plt.tight_layout()
     if save_path:
-        plt.savefig(save_path)
+        plt.savefig(save_path, bbox_inches='tight')
         print(f"Combined plot saved to {save_path}")
-    else:
-        plt.show()
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Analyze label distribution in mask PNGs and surgical phase distribution.")
+    parser = argparse.ArgumentParser(description="Analyze label distribution in mask PNGs and surgical phase distribution by split.")
     parser.add_argument("--mask_dir", type=str, default="./workspace", help="Directory containing mask .png files.")
     parser.add_argument("--annotation", type=str, default="./custom/view_annotation.json", 
                         help="Path to view_annotation.json for phase/view analysis (optional).")
-
-    parser.add_argument("--save", type=str, default=None, help="Path to save the plot (optional).")
+    parser.add_argument("--split_config", type=str, default="./custom/train_test_val_split.json",
+                        help="Path to the split configuration JSON file")
+    parser.add_argument("--save", type=str, default=None, help="Path to save the plots (optional, will be suffixed with _train/_val/_test).")
+    
     args = parser.parse_args()
-    analyze_masks(args.mask_dir, annotation_path=args.annotation, save_path=args.save)
+    
+    # Load split configuration
+    try:
+        split_config = load_split_config(args.split_config)
+        print(f"Loaded split config from {args.split_config}")
+    except FileNotFoundError:
+        print(f"Error: Split config file not found at {args.split_config}")
+        return
+    
+    clips_by_split = split_config.get('clips', {})
+    
+    # Collect data for each split
+    split_data = {}
+    for split_name in ['train', 'val', 'test']:
+        split_clips = clips_by_split.get(split_name, [])
+        if not split_clips:
+            print(f"No clips found for {split_name} split. Skipping.")
+            continue
+        
+        print(f"\n{'='*70}")
+        print(f"Collecting data for {split_name} split ({len(split_clips)} clips)")
+        print(f"{'='*70}")
+        
+        data = collect_split_data(args.mask_dir, annotation_path=args.annotation,
+                                  split_name=split_name, split_clips=split_clips)
+        if data:
+            split_data[split_name] = data
+    
+    if not split_data:
+        print("No data collected. Exiting.")
+        return
+    
+    plot_combined(split_data, save_path=args.save)
+    plt.show()
 
 if __name__ == "__main__":
     main()
