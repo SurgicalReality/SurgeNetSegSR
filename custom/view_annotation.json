@@ -270,6 +270,139 @@
                     "end_time": "00:16:10"
                 }
             }
+        },
+        "S8-LLL_test": {
+            "phases": {
+                "phase_1": {
+                    "view": "inferior",
+                    "start_time": "00:00:00",
+                    "end_time": "00:01:02"
+                },
+                "phase_2": {
+                    "view": "posterior",
+                    "start_time": "00:01:02",
+                    "end_time": "00:02:15"
+                },
+                "phase_3": {
+                    "view": "normal",
+                    "start_time": "00:02:15",
+                    "end_time": "00:02:21"
+                },
+                "phase_4": {
+                    "view": "anterior",
+                    "start_time": "00:02:21",
+                    "end_time": "00:03:30"
+                },
+                "phase_5": {
+                    "view": "normal",
+                    "start_time": "00:03:30",
+                    "end_time": "00:03:40"
+                },
+                "phase_6": {
+                    "view": "fissure",
+                    "start_time": "00:03:40",
+                    "end_time": "00:06:14"
+                },
+                "phase_7": {
+                    "view": "fissure",
+                    "start_time": "00:06:14",
+                    "end_time": "00:06:21"
+                },
+                "phase_8": {
+                    "view": "normal",
+                    "start_time": "00:06:21",
+                    "end_time": "00:06:25"
+                },
+                "phase_9": {
+                    "view": "anterior",
+                    "start_time": "00:06:25",
+                    "end_time": "00:06:54"
+                },
+                "phase_10": {
+                    "view": "fissure",
+                    "start_time": "00:06:54",
+                    "end_time": "00:07:04"
+                },
+                "phase_11": {
+                    "view": "other",
+                    "start_time": "00:07:04",
+                    "end_time": "00:07:11"
+                },
+                "phase_12": {
+                    "view": "anterior",
+                    "start_time": "00:07:11",
+                    "end_time": "00:07:17"
+                },
+                "phase_13": {
+                    "view": "fissure",
+                    "start_time": "00:07:17",
+                    "end_time": "00:07:45"
+                },
+                "phase_14": {
+                    "view": "other",
+                    "start_time": "00:07:45",
+                    "end_time": "00:08:24"
+                },
+                "phase_15": {
+                    "view": "fissure",
+                    "start_time": "00:08:24",
+                    "end_time": "00:14:36"
+                },
+                "phase_16": {
+                    "view": "other",
+                    "start_time": "00:14:36",
+                    "end_time": "00:15:04"
+                },
+                "phase_17": {
+                    "view": "normal",
+                    "start_time": "00:15:04",
+                    "end_time": "00:15:27"
+                }
+            }
+        },
+        "S7-RLL": {
+            "phases": {
+                "phase_1": {
+                    "view": "other",
+                    "start_time": "00:00:00",
+                    "end_time": "00:01:21"
+                },
+                "phase_2": {
+                    "view": "other",
+                    "start_time": "00:01:21",
+                    "end_time": "00:01:57"
+                },
+                "phase_3": {
+                    "view": "inferior",
+                    "start_time": "00:01:57",
+                    "end_time": "00:03:01"
+                },
+                "phase_4": {
+                    "view": "posterior",
+                    "start_time": "00:03:01",
+                    "end_time": "00:05:52"
+                },
+                "phase_5": {
+                    "view": "fissure",
+                    "start_time": "00:05:52",
+                    "end_time": "00:12:58"
+                },
+                "phase_6": {
+                    "view": "fissure",
+                    "start_time": "00:12:58",
+                    "end_time": "00:14:31"
+                },
+                "phase_7": {
+                    "view": "other",
+                    "start_time": "00:14:31",
+                    "end_time": "00:14:50"
+                },
+                "phase_8": {
+                    "view": "other",
+                    "start_time": "00:14:50",
+                    "end_time": "00:16:35"
+                }
+            }
         }
     }
 }

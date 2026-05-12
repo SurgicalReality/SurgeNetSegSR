@@ -78,6 +78,40 @@
                 "height": 1080
             },
             "video_prefix": "S4-5_LUL"
+        },
+        "S8-LLL_test": {
+            "crop_params": {
+                "left": 229,
+                "right": 231,
+                "top": 0,
+                "bottom": 46
+            },
+            "original_resolution": {
+                "width": 1280,
+                "height": 720
+            },
+            "new_resolution": {
+                "width": 820,
+                "height": 674
+            },
+            "video_prefix": "S8-LLL_test"
+        },
+        "S7-RLL": {
+            "crop_params": {
+                "left": 310,
+                "right": 504,
+                "top": 51,
+                "bottom": 118
+            },
+            "original_resolution": {
+                "width": 1920,
+                "height": 1080
+            },
+            "new_resolution": {
+                "width": 1106,
+                "height": 911
+            },
+            "video_prefix": "S7-RLL"
         }
     }
 }
