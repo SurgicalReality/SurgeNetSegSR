@@ -8,7 +8,8 @@
       "s8-s10_LLL"
     ],
     "test": [
-      "S7-RLL"
+      "S7-RLL",
+      "S1-3_LUL_PDF"
     ]
   },
   "clips": {

@@ -403,6 +403,55 @@
                     "end_time": "00:16:35"
                 }
             }
+        },
+        "S1-3_LUL_PDF": {
+            "phases": {
+                "phase_1": {
+                    "view": "other",
+                    "start_time": "00:00:00",
+                    "end_time": "00:01:23"
+                },
+                "phase_2": {
+                    "view": "inferior",
+                    "start_time": "00:01:23",
+                    "end_time": "00:02:55"
+                },
+                "phase_3": {
+                    "view": "posterior",
+                    "start_time": "00:02:55",
+                    "end_time": "00:04:22"
+                },
+                "phase_4": {
+                    "view": "fissure",
+                    "start_time": "00:04:22",
+                    "end_time": "00:08:25"
+                },
+                "phase_5": {
+                    "view": "anterior",
+                    "start_time": "00:08:25",
+                    "end_time": "00:12:33"
+                },
+                "phase_6": {
+                    "view": "superior",
+                    "start_time": "00:12:33",
+                    "end_time": "00:13:15"
+                },
+                "phase_7": {
+                    "view": "anterior",
+                    "start_time": "00:13:15",
+                    "end_time": "00:17:11"
+                },
+                "phase_8": {
+                    "view": "fissure",
+                    "start_time": "00:17:11",
+                    "end_time": "00:19:02"
+                },
+                "phase_9": {
+                    "view": "anterior",
+                    "start_time": "00:19:02",
+                    "end_time": "00:19:56"
+                }
+            }
         }
     }
 }

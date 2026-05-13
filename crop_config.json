@@ -1,0 +1,21 @@
+{
+    "videos": {
+        "S1-3_LUL_PDF": {
+            "crop_params": {
+                "left": 310,
+                "right": 506,
+                "top": 54,
+                "bottom": 116
+            },
+            "original_resolution": {
+                "width": 1920,
+                "height": 1080
+            },
+            "new_resolution": {
+                "width": 1104,
+                "height": 910
+            },
+            "video_prefix": "S1-3_LUL_PDF"
+        }
+    }
+}

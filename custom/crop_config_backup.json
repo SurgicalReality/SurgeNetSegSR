@@ -112,23 +112,6 @@
                 "height": 911
             },
             "video_prefix": "S7-RLL"
-        },
-        "S1-3_LUL_PDF": {
-            "crop_params": {
-                "left": 310,
-                "right": 504,
-                "top": 55,
-                "bottom": 117
-            },
-            "original_resolution": {
-                "width": 1920,
-                "height": 1080
-            },
-            "new_resolution": {
-                "width": 1106,
-                "height": 908
-            },
-            "video_prefix": "S1-3_LUL_PDF"
         }
     }
 }
