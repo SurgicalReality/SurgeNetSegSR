@@ -31,6 +31,8 @@ import re
 import shutil
 import json
 import random
+import csv
+import importlib.util
 from datetime import datetime
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import numpy as np
@@ -78,6 +80,43 @@ def build_label_remap():
     return remap
 
 LABEL_REMAP = build_label_remap()
+
+
+def load_palette_metadata():
+    """Load label names and colors from gui/cutie/utils/palette.py."""
+    palette_path = os.path.abspath(
+        os.path.join(os.path.dirname(__file__), "..", "gui", "cutie", "utils", "palette.py")
+    )
+
+    if not os.path.exists(palette_path):
+        print(f"Warning: Palette file not found at {palette_path}. Using fallback metadata.")
+        return {}, {}
+
+    try:
+        spec = importlib.util.spec_from_file_location("surgenetseg_palette", palette_path)
+        if spec is None or spec.loader is None:
+            print(f"Warning: Could not load palette spec from {palette_path}. Using fallback metadata.")
+            return {}, {}
+
+        palette_module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(palette_module)
+
+        palette_names = getattr(palette_module, "custom_names", {})
+        palette_colors = getattr(palette_module, "color_palette", {})
+        return palette_names, palette_colors
+    except Exception as e:
+        print(f"Warning: Failed to load palette metadata ({e}). Using fallback metadata.")
+        return {}, {}
+
+
+def format_color(color):
+    """Format color tuple as '(R, G, B)' for logging."""
+    if isinstance(color, (tuple, list)) and len(color) == 3:
+        try:
+            return f"({int(color[0])}, {int(color[1])}, {int(color[2])})"
+        except (TypeError, ValueError):
+            pass
+    return "N/A"
 
 def load_split_config(config_path):
     """Load the train/val/test split configuration from JSON file."""
@@ -178,6 +217,9 @@ def main(args):
 
     # Create output path if it doesn't exist
     os.makedirs(out_path, exist_ok=True)
+
+    # Load source label metadata from palette.py
+    palette_names, palette_colors = load_palette_metadata()
     
     # For logging and split tracking
     video_frame_counts = {}
@@ -187,14 +229,15 @@ def main(args):
     # Track clips by split
     train_val_clips = []
     test_clips = []
-    split_assignment = {}  # Maps video name to split type
+
+    # used to track snippet / new video folder names for train/val/test list files and split config
+    split_mapping = { "train_val": [], "test": [] }
 
     # Use thread pool for parallel processing
     num_workers = args.threads if args.threads else min(8, os.cpu_count() or 4)
     print(f"Using {num_workers} worker threads")
-    if args.snippet_length > 0:
-        snippet_names = []
     
+    # Process each video
     for video_name in tqdm(video_names, desc="Processing videos", unit="video"):
         video_folder = os.path.join(workspace_path, video_name)
 
@@ -208,38 +251,44 @@ def main(args):
             tqdm.write(f"Warning: Video '{video_name}' doesn't match any source pattern. Skipping.")
             continue
         
-        split_assignment[video_name] = split_type
-        
         # Track frames for this video
         video_frames = 0
         
         # images folder -> JPEGImages/video_name
         image_folder = os.path.join(video_folder, "images")
+
+        # Make initial snipped output folder
         if args.snippet_length > 0:
             snippet_name = f"{video_name.replace('.', '_')}_frames_0-{args.snippet_length}"
-            snippet_names.append(snippet_name)
             images_out_folder = os.path.join(out_path, "JPEGImages", snippet_name)
-            
+            split_mapping[split_type].append(snippet_name)
         else:
             images_out_folder = os.path.join(out_path, "JPEGImages", video_name.replace(".", "_"))
+            split_mapping[split_type].append(video_name.replace(".", "_"))
         os.makedirs(images_out_folder, exist_ok=True)
 
         # Prepare image copy tasks
         image_files = [f for f in os.listdir(image_folder) if os.path.isfile(os.path.join(image_folder, f))]
+        
         # sort files by frame number (assuming filename format is something like "00000.jpg", "00001.jpg", etc.)
         image_files.sort(key=lambda x: int(x.rsplit(".", 1)[0]))
 
         image_tasks = []
         snippet_frame_counter = 0
+
+        # Loop through all images and prepare them for copying
         for filename in image_files:
             file_idx = int(filename.rsplit(".", 1)[0]) # get file which contains the current frame_number
+            
             # if snippet length is met, create new snippet (reset counter) - this will create multiple snippets for a video if snippet_length is set
             if args.snippet_length > 0 and snippet_frame_counter == args.snippet_length:
                 snippet_frame_counter = 0
                 snippet_name = f"{video_name.replace('.', '_')}_frames_{file_idx}-{file_idx + args.snippet_length}"
-                snippet_names.append(snippet_name)
                 images_out_folder = os.path.join(out_path, "JPEGImages", snippet_name)
                 os.makedirs(images_out_folder, exist_ok=True)
+                # document in split mapping
+                split_mapping[split_type].append(snippet_name)
+            
             file_path = os.path.join(image_folder, filename)
             if (args.snippet_length > 0):
                 new_filename = f"{(file_idx % args.snippet_length):05d}.jpg"
@@ -260,12 +309,6 @@ def main(args):
         # Store frame count for this video
         video_frame_counts[video_name.replace(".", "_")] = video_frames
         total_frames += video_frames
-        
-        # Track clip for split assignment
-        if split_type == "train_val":
-            train_val_clips.append(video_name)
-        elif split_type == "test":
-            test_clips.append(video_name)
         
         # masks folder -> Annotations/video_name
         mask_folder = os.path.join(video_folder, "masks")
@@ -306,15 +349,23 @@ def main(args):
 
     # Perform train/val split
     train_val_ratio = split_config.get('train_val_ratio', 0.8)
-    train_clips, val_clips = perform_train_val_split(train_val_clips, train_val_ratio)
+    train_clips, val_clips = perform_train_val_split(split_mapping['train_val'], train_val_ratio)
+    test_clips = split_mapping['test']
     
-    # Update split config with clips
+    # Update split config with clips / snippets
     split_config['clips'] = {
         'train': train_clips,
         'val': val_clips,
         'test': test_clips
     }
-    
+
+    # calculate number of frames in each split for logging
+    split_config['split_frame_counts'] = {
+        'train': sum(video_frame_counts.get(clip.replace('.', '_'), 0) for clip in train_clips),
+        'val': sum(video_frame_counts.get(clip.replace('.', '_'), 0) for clip in val_clips),
+        'test': sum(video_frame_counts.get(clip.replace('.', '_'), 0) for clip in test_clips)
+    }
+
     # Save updated config
     save_split_config(split_config, split_config_path)
     print(f"Updated split config saved to {split_config_path}")
@@ -339,6 +390,20 @@ def main(args):
     print(f"Created test list at '{test_txt_path}' with {len(test_clips)} videos.")
 
     print(f"Total files processed: {count}")
+
+    # Write dedicated label remap log for traceability
+    label_log_path = os.path.join(out_path, "label_remap_log.csv")
+    with open(label_log_path, "w", newline="", encoding="utf-8") as csv_file:
+        writer = csv.writer(csv_file)
+        writer.writerow(["original_id", "new_id", "status", "name", "original_color"])
+        for orig_id in sorted(LABEL_CONFIG.keys()):
+            new_id = LABEL_REMAP.get(orig_id, 0)
+            status = "KEPT" if LABEL_CONFIG.get(orig_id, False) else "REMOVED"
+            name = palette_names.get(orig_id, f"Label {orig_id}")
+            original_color = format_color(palette_colors.get(orig_id))
+            writer.writerow([orig_id, new_id, status, name, original_color])
+
+    print(f"✓ Label remap log saved to: {label_log_path}")
     
     # Write log file
     log_path = os.path.join(out_path, "conversion_log.txt")
@@ -356,36 +421,17 @@ def main(args):
         log_file.write("LABEL REMAPPING:\n")
         log_file.write("-" * 70 + "\n\n")
         
-        label_names = {
-            1: "Surgical Instruments",
-            2: "Vein (major)",
-            3: "Artery (major)",
-            4: "Right Superior (Upper) Lobe",
-            5: "Right Middle Lobe",
-            6: "Right Inferior (Lower) Lobe",
-            7: "Left Superior (Upper) Lobe",
-            8: "Left Inferior (Lower) Lobe",
-            9: "Bronchus",
-            10: "Right Horizontal Fissure",
-            11: "Right Oblique Fissure",
-            12: "Left Oblique Fissure",
-            13: "Phrenic Nerve",
-            14: "Aorta",
-            15: "Esophagus",
-            16: "Lymph Nodes",
-            17: "Cotton Swab",
-        }
-        
-        log_file.write("  Original -> New  | Status   | Label Name\n")
-        log_file.write("  " + "-" * 55 + "\n")
+        log_file.write("  Original -> New  | Status   | Label Name                       | Original Color\n")
+        log_file.write("  " + "-" * 88 + "\n")
         for orig_id in sorted(LABEL_CONFIG.keys()):
             new_id = LABEL_REMAP.get(orig_id, 0)
             status = "KEPT" if LABEL_CONFIG[orig_id] else "REMOVED"
-            name = label_names.get(orig_id, "Unknown")
-            if LABEL_CONFIG[orig_id]:
-                log_file.write(f"  {orig_id:>8} -> {new_id:<4} | {status:<8} | {name}\n")
-            else:
-                log_file.write(f"  {orig_id:>8} -> 0    | {status:<8} | {name}\n")
+            name = palette_names.get(orig_id, f"Label {orig_id}")
+            color_text = format_color(palette_colors.get(orig_id))
+            mapped_id = new_id if LABEL_CONFIG[orig_id] else 0
+            log_file.write(f"  {orig_id:>8} -> {mapped_id:<4} | {status:<8} | {name:<32} | {color_text}\n")
+
+        log_file.write(f"\n  Detailed remap CSV: {label_log_path}\n")
         
         log_file.write("\n" + "-" * 70 + "\n")
         log_file.write("VIDEO CLIPS PROCESSED:\n")
