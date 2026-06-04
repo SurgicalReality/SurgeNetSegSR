@@ -279,14 +279,14 @@ def plot_combined(split_data, save_path=None):
         total = sum(data['label_counts'].values()) or 1
         pcts = [v / total * 100 for v in vals]
         offset = (i - n_splits / 2 + 0.5) * width
-        bars = ax1.bar(x + offset, vals, width=width, color=bar_colors,
+        bars = ax1.bar(x + offset, pcts, width=width, color=bar_colors,
                        hatch=SPLIT_HATCHES[split], edgecolor=SPLIT_EDGE_COLORS[split],
                        linewidth=0.8, label=split.upper(), alpha=0.7)
         for bar, pct, n in zip(bars, pcts, vals):
             if n > 0:
                 ax1.text(bar.get_x() + bar.get_width() / 2., bar.get_height(),
-                         f'{pct:.0f}%', ha='center', va='bottom', fontsize=7)
-    ax1.set_ylabel("Number of Frames")
+                         f'{pct:.1f}%', ha='center', va='bottom', fontsize=7)
+    ax1.set_ylabel("Percentage of Frames (%)")
     ax1.set_title("Frames Where Label Occurs")
     ax1.set_xticks(x)
     ax1.set_xticklabels(label_names, rotation=45, ha='right')
@@ -299,14 +299,14 @@ def plot_combined(split_data, save_path=None):
         total = sum(data['label_areas'].values()) or 1
         pcts = [v / total * 100 for v in vals]
         offset = (i - n_splits / 2 + 0.5) * width
-        bars = ax2.bar(x + offset, vals, width=width, color=bar_colors,
+        bars = ax2.bar(x + offset, pcts, width=width, color=bar_colors,
                        hatch=SPLIT_HATCHES[split], edgecolor=SPLIT_EDGE_COLORS[split],
                        linewidth=0.8, label=split.upper(), alpha=0.7)
         for bar, pct, n in zip(bars, pcts, vals):
             if n > 0:
                 ax2.text(bar.get_x() + bar.get_width() / 2., bar.get_height(),
-                         f'{pct:.0f}%', ha='center', va='bottom', fontsize=7)
-    ax2.set_ylabel("Total Area (pixels)")
+                         f'{pct:.1f}%', ha='center', va='bottom', fontsize=7)
+    ax2.set_ylabel("Percentage of Total Area (%)")
     ax2.set_title("Total Area Covered by Each Label")
     ax2.set_xticks(x)
     ax2.set_xticklabels(label_names, rotation=45, ha='right')
@@ -323,15 +323,15 @@ def plot_combined(split_data, save_path=None):
             total = sum(split_data[split]['view_counts'].values()) or 1
             pcts = [v / total * 100 for v in vals]
             offset = (i - n_splits / 2 + 0.5) * width
-            bars =ax3.bar(x_views + offset, vals, width=width,
+            bars = ax3.bar(x_views + offset, pcts, width=width,
                     color=[view_color_map[v] for v in all_views],
                     hatch=SPLIT_HATCHES[split], edgecolor=SPLIT_EDGE_COLORS[split],
                     linewidth=0.8, label=split.upper(), alpha=0.7)
             for bar, pct, n in zip(bars, pcts, vals):
                 if n > 0:
                     ax3.text(bar.get_x() + bar.get_width() / 2., bar.get_height(),
-                             f'{pct:.0f}%', ha='center', va='bottom', fontsize=7)
-        ax3.set_ylabel("Number of Annotated Frames")
+                             f'{pct:.1f}%', ha='center', va='bottom', fontsize=7)
+        ax3.set_ylabel("Percentage of Annotated Frames (%)")
         ax3.set_title("Frames by Surgical View")
         ax3.set_xticks(x_views)
         ax3.set_xticklabels(all_views, rotation=45, ha='right')
@@ -350,16 +350,15 @@ def plot_combined(split_data, save_path=None):
             vals = [data['objects_per_frame'].get(k, 0) for k in all_obj_counts]
             pcts = [v / total * 100 for v in vals]
             offset = (i - n_splits / 2 + 0.5) * width
-            bars = ax4.bar(x_obj + offset, vals, width=width,
+            bars = ax4.bar(x_obj + offset, pcts, width=width,
                            color=colors_obj,
                            hatch=SPLIT_HATCHES[split], edgecolor=SPLIT_EDGE_COLORS[split],
                            linewidth=0.8, label=split.upper())
             for bar, pct, n in zip(bars, pcts, vals):
                 if n > 0:
                     ax4.text(bar.get_x() + bar.get_width() / 2., bar.get_height(),
-                             f'{pct:.0f}%', ha='center', va='bottom', fontsize=7)
-        ax4.set_xlabel("Number of Objects Visible")
-        ax4.set_ylabel("Number of Frames")
+                             f'{pct:.1f}%', ha='center', va='bottom', fontsize=7)
+        ax4.set_ylabel("Percentage of Frames (%)")
         ax4.set_title("Objects Visible Per Frame")
         ax4.set_xticks(x_obj)
         ax4.set_xticklabels([str(k) for k in all_obj_counts])
