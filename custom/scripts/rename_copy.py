@@ -1,3 +1,5 @@
+### This tool was used once to reanme and copy videos in the dataset. Not used in the current app. 
+
 """
 Video Cropping Tool for Surgical Video Preprocessing
 

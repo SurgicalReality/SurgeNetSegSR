@@ -1,3 +1,6 @@
+### This script analyzes the distribution of the a final dataset after the export. 
+### It uses the train/val/test split lists to analyze the distribution of labels, areas, and surgical phases across the splits. It generates plots and prints descriptive statistics.
+### It requires a mask directory containing the annotations, the view_annotation.json file for phase/view analysis, and the train/val/test split lists.
 
 import os
 import argparse
@@ -162,6 +165,7 @@ def collect_split_data(mask_dir, annotation_path=None, split_name=None, split_cl
         local_frame_phase_mapping = {}
         local_objects_per_frame = Counter()
         local_total_frames = 0
+        local_label_frames = defaultdict(set)  # Local collection
         
         # Try to extract video info from the workspace directory structure
         video_name = None
@@ -212,7 +216,7 @@ def collect_split_data(mask_dir, annotation_path=None, split_name=None, split_cl
                     local_areas[label] += area
                 # For frame count: only count once per frame if label is present
                 for label in unique:
-                    label_frames[label].add(fpath)
+                    local_label_frames[label].add(fpath)
         
         with lock:
             for k, v in local_areas.items():
@@ -223,6 +227,8 @@ def collect_split_data(mask_dir, annotation_path=None, split_name=None, split_cl
                 view_counts[k] += v
             for k, v in local_objects_per_frame.items():
                 objects_per_frame[k] += v
+            for k, frames in local_label_frames.items():  # Now safely merging local_label_frames
+                label_frames[k].update(frames)
             frame_phase_mapping.update(local_frame_phase_mapping)
             nonlocal total_frames
             total_frames += local_total_frames
@@ -238,6 +244,10 @@ def collect_split_data(mask_dir, annotation_path=None, split_name=None, split_cl
     # After all threads, count number of frames for each label
     for label, frames in label_frames.items():
         label_counts[label] = len(frames)
+
+    # Convert np.uint8 keys to regular int for consistency with custom_names
+    label_counts = Counter({int(k): v for k, v in label_counts.items()})
+    label_areas = {int(k): v for k, v in label_areas.items()}
 
     return {
         'label_counts': label_counts,
@@ -300,6 +310,20 @@ def print_label_frame_counts(split_data):
             n_frames = label_counts.get(label_id, 0)
             pct = (n_frames / total_frames * 100) if total_frames else 0.0
             print(f"  {label_id:>2} {custom_names[label_id]:<30} n_frames={n_frames:>8,d} ({pct:5.2f}%)")
+    
+    # Debug: Print what data is being used by the plots
+    print(f"\n{'='*70}")
+    print("DEBUG: Data structure passed to plot functions")
+    print(f"{'='*70}")
+    print(f"Splits in split_data: {list(split_data.keys())}")
+    for split in split_data:
+        print(f"\n{split}:")
+        print(f"  total_frames: {split_data[split].get('total_frames', 'MISSING')}")
+        label_counts = split_data[split].get('label_counts', {})
+        print(f"  label_counts type: {type(label_counts)}")
+        print(f"  label_counts keys: {sorted(label_counts.keys())}")
+        if label_counts:
+            print(f"  sample (label 1): {label_counts.get(1, 'MISSING')}")
 
 
 def plot_frames_per_label(split_data, save_path=None):

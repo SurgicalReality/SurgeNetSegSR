@@ -1,3 +1,6 @@
+### This script was used once to correct the video names and crops in the dataset, it is not used anymore. The application includes all the functionality. 
+
+
 """
 Video Cropping Tool for Surgical Video Preprocessing
 

@@ -1,3 +1,6 @@
+### This script updates the palette of all mask images in the specified directories to match the color palette defined in the palette.py file. 
+### It uses multithreading to speed up the process.
+
 import os
 from PIL import Image
 import importlib.util
