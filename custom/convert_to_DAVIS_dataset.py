@@ -229,15 +229,14 @@ def main(args):
     # Track clips by split
     train_val_clips = []
     test_clips = []
-
-    # used to track snippet / new video folder names for train/val/test list files and split config
-    split_mapping = { "train_val": [], "test": [] }
+    split_assignment = {}  # Maps video name to split type
 
     # Use thread pool for parallel processing
     num_workers = args.threads if args.threads else min(8, os.cpu_count() or 4)
     print(f"Using {num_workers} worker threads")
+    if args.snippet_length > 0:
+        snippet_names = []
     
-    # Process each video
     for video_name in tqdm(video_names, desc="Processing videos", unit="video"):
         video_folder = os.path.join(workspace_path, video_name)
 
@@ -251,44 +250,38 @@ def main(args):
             tqdm.write(f"Warning: Video '{video_name}' doesn't match any source pattern. Skipping.")
             continue
         
+        split_assignment[video_name] = split_type
+        
         # Track frames for this video
         video_frames = 0
         
         # images folder -> JPEGImages/video_name
         image_folder = os.path.join(video_folder, "images")
-
-        # Make initial snipped output folder
         if args.snippet_length > 0:
             snippet_name = f"{video_name.replace('.', '_')}_frames_0-{args.snippet_length}"
+            snippet_names.append(snippet_name)
             images_out_folder = os.path.join(out_path, "JPEGImages", snippet_name)
-            split_mapping[split_type].append(snippet_name)
+            
         else:
             images_out_folder = os.path.join(out_path, "JPEGImages", video_name.replace(".", "_"))
-            split_mapping[split_type].append(video_name.replace(".", "_"))
         os.makedirs(images_out_folder, exist_ok=True)
 
         # Prepare image copy tasks
         image_files = [f for f in os.listdir(image_folder) if os.path.isfile(os.path.join(image_folder, f))]
-        
         # sort files by frame number (assuming filename format is something like "00000.jpg", "00001.jpg", etc.)
         image_files.sort(key=lambda x: int(x.rsplit(".", 1)[0]))
 
         image_tasks = []
         snippet_frame_counter = 0
-
-        # Loop through all images and prepare them for copying
         for filename in image_files:
             file_idx = int(filename.rsplit(".", 1)[0]) # get file which contains the current frame_number
-            
             # if snippet length is met, create new snippet (reset counter) - this will create multiple snippets for a video if snippet_length is set
             if args.snippet_length > 0 and snippet_frame_counter == args.snippet_length:
                 snippet_frame_counter = 0
                 snippet_name = f"{video_name.replace('.', '_')}_frames_{file_idx}-{file_idx + args.snippet_length}"
+                snippet_names.append(snippet_name)
                 images_out_folder = os.path.join(out_path, "JPEGImages", snippet_name)
                 os.makedirs(images_out_folder, exist_ok=True)
-                # document in split mapping
-                split_mapping[split_type].append(snippet_name)
-            
             file_path = os.path.join(image_folder, filename)
             if (args.snippet_length > 0):
                 new_filename = f"{(file_idx % args.snippet_length):05d}.jpg"
@@ -309,6 +302,12 @@ def main(args):
         # Store frame count for this video
         video_frame_counts[video_name.replace(".", "_")] = video_frames
         total_frames += video_frames
+        
+        # Track clip for split assignment
+        if split_type == "train_val":
+            train_val_clips.append(video_name)
+        elif split_type == "test":
+            test_clips.append(video_name)
         
         # masks folder -> Annotations/video_name
         mask_folder = os.path.join(video_folder, "masks")
@@ -349,23 +348,15 @@ def main(args):
 
     # Perform train/val split
     train_val_ratio = split_config.get('train_val_ratio', 0.8)
-    train_clips, val_clips = perform_train_val_split(split_mapping['train_val'], train_val_ratio)
-    test_clips = split_mapping['test']
+    train_clips, val_clips = perform_train_val_split(train_val_clips, train_val_ratio)
     
-    # Update split config with clips / snippets
+    # Update split config with clips
     split_config['clips'] = {
         'train': train_clips,
         'val': val_clips,
         'test': test_clips
     }
-
-    # calculate number of frames in each split for logging
-    split_config['split_frame_counts'] = {
-        'train': sum(video_frame_counts.get(clip.replace('.', '_'), 0) for clip in train_clips),
-        'val': sum(video_frame_counts.get(clip.replace('.', '_'), 0) for clip in val_clips),
-        'test': sum(video_frame_counts.get(clip.replace('.', '_'), 0) for clip in test_clips)
-    }
-
+    
     # Save updated config
     save_split_config(split_config, split_config_path)
     print(f"Updated split config saved to {split_config_path}")
