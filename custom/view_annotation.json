@@ -452,6 +452,119 @@
                     "end_time": "00:19:56"
                 }
             }
+        },
+        "UMCU_001_LBK_SEG": {
+            "phases": {
+                "phase_1": {
+                    "view": "other",
+                    "start_time": "00:00:00",
+                    "end_time": "00:22:42"
+                },
+                "phase_2": {
+                    "view": "normal",
+                    "start_time": "00:22:42",
+                    "end_time": "00:23:00"
+                },
+                "phase_3": {
+                    "view": "posterior",
+                    "start_time": "00:23:00",
+                    "end_time": "00:41:11"
+                },
+                "phase_4": {
+                    "view": "fissure",
+                    "start_time": "00:41:11",
+                    "end_time": "00:51:24"
+                },
+                "phase_5": {
+                    "view": "anterior",
+                    "start_time": "00:51:24",
+                    "end_time": "01:00:28"
+                },
+                "phase_6": {
+                    "view": "other",
+                    "start_time": "01:00:28",
+                    "end_time": "01:01:03"
+                },
+                "phase_7": {
+                    "view": "anterior",
+                    "start_time": "01:01:03",
+                    "end_time": "01:09:58"
+                },
+                "phase_8": {
+                    "view": "other",
+                    "start_time": "01:09:58",
+                    "end_time": "01:13:19"
+                }
+            }
+        },
+        "S6-RUL_PDF": {
+            "phases": {
+                "phase_1": {
+                    "view": "other",
+                    "start_time": "00:00:00",
+                    "end_time": "00:01:41"
+                },
+                "phase_2": {
+                    "view": "normal",
+                    "start_time": "00:01:41",
+                    "end_time": "00:02:00"
+                },
+                "phase_3": {
+                    "view": "inferior",
+                    "start_time": "00:02:00",
+                    "end_time": "00:03:25"
+                },
+                "phase_4": {
+                    "view": "posterior",
+                    "start_time": "00:03:25",
+                    "end_time": "00:05:02"
+                },
+                "phase_5": {
+                    "view": "other",
+                    "start_time": "00:05:02",
+                    "end_time": "00:05:20"
+                },
+                "phase_6": {
+                    "view": "posterior",
+                    "start_time": "00:05:20",
+                    "end_time": "00:07:17"
+                },
+                "phase_7": {
+                    "view": "other",
+                    "start_time": "00:07:17",
+                    "end_time": "00:07:22"
+                },
+                "phase_8": {
+                    "view": "fissure",
+                    "start_time": "00:07:22",
+                    "end_time": "00:12:21"
+                },
+                "phase_9": {
+                    "view": "other",
+                    "start_time": "00:12:21",
+                    "end_time": "00:12:36"
+                },
+                "phase_10": {
+                    "view": "posterior",
+                    "start_time": "00:12:36",
+                    "end_time": "00:15:04"
+                },
+                "phase_11": {
+                    "view": "fissure",
+                    "start_time": "00:15:04",
+                    "end_time": "00:16:37"
+                },
+                "phase_12": {
+                    "view": "posterior",
+                    "start_time": "00:16:37",
+                    "end_time": "00:17:42"
+                },
+                "phase_13": {
+                    "view": "other",
+                    "start_time": "00:17:42",
+                    "end_time": "00:18:23"
+                }
+            }
         }
     }
 }

@@ -129,6 +129,40 @@
                 "height": 908
             },
             "video_prefix": "S1-3_LUL_PDF"
+        },
+        "UMCU_001_LBK_SEG": {
+            "crop_params": {
+                "left": 290,
+                "right": 292,
+                "top": 0,
+                "bottom": 68
+            },
+            "original_resolution": {
+                "width": 1920,
+                "height": 1080
+            },
+            "new_resolution": {
+                "width": 1338,
+                "height": 1012
+            },
+            "video_prefix": "UMCU_001_LBK_SEG"
+        },
+        "S6-RUL_PDF": {
+            "crop_params": {
+                "left": 310,
+                "right": 504,
+                "top": 0,
+                "bottom": 170
+            },
+            "original_resolution": {
+                "width": 1920,
+                "height": 1080
+            },
+            "new_resolution": {
+                "width": 1106,
+                "height": 910
+            },
+            "video_prefix": "S6-RUL_PDF"
         }
     }
 }
