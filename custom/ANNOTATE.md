@@ -1,8 +1,8 @@
-[[@toc]]
 
 # Data Annotation Pipeline
 
-This Readme outlines the process of data annotation with the SurgeNetSeg / ATLAS interactive Repository
+This Readme outlines the process of data annotation with the SurgeNetSeg / ATLAS interactive Repository. 
+For more detailed descriptions and more context please refer to my markdown notes in the Surgical Video database `\OneDrive - surgicalreality.com\Team - Documents\Segmentation\Database\Surgical Video\notes\Annotation.md`
 
 
 ## Data preprocessing
