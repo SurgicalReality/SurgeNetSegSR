@@ -163,6 +163,23 @@
                 "height": 910
             },
             "video_prefix": "S6-RUL_PDF"
+        },
+        "UMC_Test_Clip": {
+            "crop_params": {
+                "left": 290,
+                "right": 292,
+                "top": 0,
+                "bottom": 70
+            },
+            "original_resolution": {
+                "width": 1920,
+                "height": 1080
+            },
+            "new_resolution": {
+                "width": 1338,
+                "height": 1010
+            },
+            "video_prefix": "UMC_Test_Clip"
         }
     }
 }

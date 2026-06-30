@@ -103,12 +103,7 @@ def get_frame_phase(frame_num, fps, video_phases):
     return None, None
 
 
-def load_split_config(config_path):
-    """Load the train/val/test split configuration from JSON file."""
-    with open(config_path, 'r') as f:
-        return json.load(f)
-
-def collect_split_data(mask_dir, annotation_path=None, split_name=None, split_clips=None):
+def collect_split_data(mask_dir, annotation_path=None):
     """Collect mask statistics for a split. Returns a data dict."""
     label_counts = Counter()  # Number of frames where label occurs
     label_areas = defaultdict(int)  # Total area (pixels) for each label
@@ -128,18 +123,6 @@ def collect_split_data(mask_dir, annotation_path=None, split_name=None, split_cl
         print(f"No 'masks' subfolders found in {mask_dir}")
         return
     print(f"Found {len(masks_dirs)} 'masks' subfolders.")
-    
-    # Filter masks_dirs by split_clips if provided
-    if split_clips is not None:
-        filtered_dirs = []
-        for masks_dir in masks_dirs:
-            # Extract clip name from path
-            clip_dir = os.path.dirname(masks_dir)
-            clip_name = os.path.basename(clip_dir)
-            if clip_name in split_clips:
-                filtered_dirs.append(masks_dir)
-        masks_dirs = filtered_dirs
-        print(f"Filtered to {len(masks_dirs)} 'masks' subfolders for {split_name} split.")
     
     # Load annotation data if provided
     annotation_data = None if annotation_path is None else load_annotation_data(annotation_path)
@@ -240,8 +223,7 @@ def plot_combined(split_data, save_path=None):
     split_data: dict of {split_name: data_dict} from collect_split_data()
     Bars use the same label colors; splits are distinguished by hatch pattern.
     """
-    SPLIT_HATCHES = {'train': '', 'val': '///', 'test': 'xxx'}
-    SPLIT_EDGE_COLORS = {'train': 'none', 'val': '#333333', 'test': '#333333'}
+    hatch_cycle = ['', '///', 'xxx', '\\\\\\', '...']
 
     # Gather all labels present across all splits (filtered by LABEL_DISPLAY)
     all_labels = sorted(
@@ -257,12 +239,14 @@ def plot_combined(split_data, save_path=None):
 
     splits = list(split_data.keys())
     n_splits = len(splits)
+    split_hatches = {s: hatch_cycle[i % len(hatch_cycle)] for i, s in enumerate(splits)}
+    split_edge_colors = {s: ('none' if split_hatches[s] == '' else '#333333') for s in splits}
     n_labels = len(all_labels)
     width = 0.8 / n_splits
     x = np.arange(n_labels)
 
     fig, axes = plt.subplots(2, 2, figsize=(max(16, n_labels * 1.2), 13))
-    fig.suptitle("Dataset Split Analysis", fontsize=17, fontweight='bold')
+    fig.suptitle("Dataset Analysis", fontsize=17, fontweight='bold')
     ax1, ax2 = axes[0, 0], axes[0, 1]
     ax3, ax4 = axes[1, 0], axes[1, 1]
 
@@ -272,7 +256,7 @@ def plot_combined(split_data, save_path=None):
         vals = [data['label_counts'].get(l, 0) for l in all_labels]
         offset = (i - n_splits / 2 + 0.5) * width
         ax1.bar(x + offset, vals, width=width, color=bar_colors,
-                hatch=SPLIT_HATCHES[split], edgecolor=SPLIT_EDGE_COLORS[split],
+            hatch=split_hatches[split], edgecolor=split_edge_colors[split],
                 linewidth=0.8, label=split.upper())
     ax1.set_ylabel("Number of Frames")
     ax1.set_title("Frames Where Label Occurs")
@@ -286,7 +270,7 @@ def plot_combined(split_data, save_path=None):
         vals = [data['label_areas'].get(l, 0) for l in all_labels]
         offset = (i - n_splits / 2 + 0.5) * width
         ax2.bar(x + offset, vals, width=width, color=bar_colors,
-                hatch=SPLIT_HATCHES[split], edgecolor=SPLIT_EDGE_COLORS[split],
+            hatch=split_hatches[split], edgecolor=split_edge_colors[split],
                 linewidth=0.8, label=split.upper())
     ax2.set_ylabel("Total Area (pixels)")
     ax2.set_title("Total Area Covered by Each Label")
@@ -305,7 +289,7 @@ def plot_combined(split_data, save_path=None):
             offset = (i - n_splits / 2 + 0.5) * width
             ax3.bar(x_views + offset, vals, width=width,
                     color=[view_color_map[v] for v in all_views],
-                    hatch=SPLIT_HATCHES[split], edgecolor=SPLIT_EDGE_COLORS[split],
+                    hatch=split_hatches[split], edgecolor=split_edge_colors[split],
                     linewidth=0.8, label=split.upper())
         ax3.set_ylabel("Number of Annotated Frames")
         ax3.set_title("Frames by Surgical View")
@@ -328,7 +312,7 @@ def plot_combined(split_data, save_path=None):
             offset = (i - n_splits / 2 + 0.5) * width
             bars = ax4.bar(x_obj + offset, vals, width=width,
                            color=colors_obj,
-                           hatch=SPLIT_HATCHES[split], edgecolor=SPLIT_EDGE_COLORS[split],
+                           hatch=split_hatches[split], edgecolor=split_edge_colors[split],
                            linewidth=0.8, label=split.upper())
             for bar, pct, n in zip(bars, pcts, vals):
                 if n > 0:
@@ -350,47 +334,24 @@ def plot_combined(split_data, save_path=None):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Analyze label distribution in mask PNGs and surgical phase distribution by split.")
+    parser = argparse.ArgumentParser(description="Analyze label distribution in mask PNGs and surgical phase distribution.")
     parser.add_argument("--mask_dir", type=str, default="./workspace", help="Directory containing mask .png files.")
     parser.add_argument("--annotation", type=str, default="./custom/view_annotation.json", 
                         help="Path to view_annotation.json for phase/view analysis (optional).")
-    parser.add_argument("--split_config", type=str, default="./custom/train_test_val_split.json",
-                        help="Path to the split configuration JSON file")
-    parser.add_argument("--save", type=str, default=None, help="Path to save the plots (optional, will be suffixed with _train/_val/_test).")
+    parser.add_argument("--save", type=str, default=None, help="Path to save the combined plot (optional).")
     
     args = parser.parse_args()
     
-    # Load split configuration
-    try:
-        split_config = load_split_config(args.split_config)
-        print(f"Loaded split config from {args.split_config}")
-    except FileNotFoundError:
-        print(f"Error: Split config file not found at {args.split_config}")
-        return
-    
-    clips_by_split = split_config.get('clips', {})
-    
-    # Collect data for each split
-    split_data = {}
-    for split_name in ['train', 'val', 'test']:
-        split_clips = clips_by_split.get(split_name, [])
-        if not split_clips:
-            print(f"No clips found for {split_name} split. Skipping.")
-            continue
-        
-        print(f"\n{'='*70}")
-        print(f"Collecting data for {split_name} split ({len(split_clips)} clips)")
-        print(f"{'='*70}")
-        
-        data = collect_split_data(args.mask_dir, annotation_path=args.annotation,
-                                  split_name=split_name, split_clips=split_clips)
-        if data:
-            split_data[split_name] = data
-    
-    if not split_data:
+    print(f"\n{'='*70}")
+    print(f"Collecting data from workspace: {args.mask_dir}")
+    print(f"{'='*70}")
+
+    data = collect_split_data(args.mask_dir, annotation_path=args.annotation)
+    if not data:
         print("No data collected. Exiting.")
         return
-    
+
+    split_data = {'workspace': data}
     plot_combined(split_data, save_path=args.save)
     plt.show()
 

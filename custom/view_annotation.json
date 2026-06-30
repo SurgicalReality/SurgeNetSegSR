@@ -565,6 +565,35 @@
                     "end_time": "00:18:23"
                 }
             }
+        },
+        "UMC_Test_Clip": {
+            "phases": {
+                "phase_1": {
+                    "view": "normal",
+                    "start_time": "00:00:00",
+                    "end_time": "00:00:13"
+                },
+                "phase_2": {
+                    "view": "fissure",
+                    "start_time": "00:00:13",
+                    "end_time": "00:00:20"
+                },
+                "phase_3": {
+                    "view": "anterior",
+                    "start_time": "00:00:20",
+                    "end_time": "00:01:52"
+                },
+                "phase_4": {
+                    "view": "fissure",
+                    "start_time": "00:01:52",
+                    "end_time": "00:03:17"
+                },
+                "phase_5": {
+                    "view": "inferior",
+                    "start_time": "00:03:17",
+                    "end_time": "00:04:49"
+                }
+            }
         }
     }
 }
