@@ -208,5 +208,10 @@ python custom/annotation_check.py
 
 If we want the full clip for demo purposes, I created a script that combines the masks with the frames again to create a video:
 ```
+python custom/stitch_video.py [workspace_folder] --alpha [0-1] --fps 30 --workers 16
+```
+
+example:
+```
 python custom/stitch_video.py "s8-s10_LLL_0660_0690_sec_cropped.mp4" --alpha 0.35 --fps 30 --workers 16
 ```
