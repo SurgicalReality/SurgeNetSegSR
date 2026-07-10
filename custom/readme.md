@@ -206,7 +206,8 @@ python custom/annotation_check.py
 
 ## Stitch video together
 
-If we want the full clip for demo purposes, I created a script that combines the masks with the frames again to create a video:
+If we want the full clip for demo purposes, I created a script that combines the masks with the frames again to create a video. The frames must be in the workspace-folder for this to work, in the same structure as you would get when annotating a video. 
+
 ```
 python custom/stitch_video.py [workspace_folder] --alpha [0-1] --fps 30 --workers 16
 ```
